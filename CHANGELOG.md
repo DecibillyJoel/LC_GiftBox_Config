@@ -1,4 +1,4 @@
-# LCMPublishingTemplate Changelog
+# LC_GiftBox_Config Changelog
 
 ## Describe your changes for each release here
 

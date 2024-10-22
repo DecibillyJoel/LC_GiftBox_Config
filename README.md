@@ -1,6 +1,6 @@
-# LCMPublishingTemplate
+# LC_GiftBox_Config
 
-__PROJECT_DESC__
+Configure what scrap and/or store items can spawn in the gift box
 
 ## How to use this Template
 
