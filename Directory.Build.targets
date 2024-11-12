@@ -68,7 +68,7 @@ internal static class LCMPluginInfo
     />
   </Target>
 
-  <Target Name="FetchNeededAssemblies" BeforeTargets="BeforeCompile;CoreCompile">
+  <Target Name="FetchNeededAssemblies" BeforeTargets="AfterClean;BeforeBuild;BeforeRebuild;BeforeCompile;CoreCompile;BeforeResGen;BeforeResolveReference">
     <CallTarget Targets="FetchLethalConfig;" />
   </Target>
 
