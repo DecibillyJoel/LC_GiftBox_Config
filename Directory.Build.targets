@@ -14,12 +14,14 @@
     <PropertyGroup>
       <LCMPluginGuid Condition="'$(LCMPluginGuid)' == ''">$(AssemblyName)</LCMPluginGuid>
       <LCMPluginName Condition="'$(LCMPluginName)' == ''">$(Product)</LCMPluginName>
+      <LCMPluginTsTeam Condition  ="'$(LCMPluginTsTeam)' == ''">$(TsTeam)</LCMPluginTsTeam>
       <LCMPluginVersion Condition="'$(LCMPluginVersion)' == ''">$(Version)</LCMPluginVersion>
       <GeneratedText><![CDATA[
 internal static class LCMPluginInfo
 {
   public const string PLUGIN_GUID = "$(LCMPluginGuid)"%3B
   public const string PLUGIN_NAME = "$(LCMPluginName)"%3B
+  public const string PLUGIN_TS_TEAM = "$(LCMPluginTsTeam)"%3B
   public const string PLUGIN_VERSION = "$(LCMPluginVersion)"%3B
 }
 ]]></GeneratedText>
@@ -34,6 +36,39 @@ internal static class LCMPluginInfo
     <WriteLinesToFile Lines="$(GeneratedText)" File="$(GeneratedFilePath)"
         WriteOnlyWhenDifferent="true" Overwrite="true" />
 
+  </Target>
+
+  <Target Name="DownloadLethalConfig" Condition="!Exists('$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip')">
+    <DownloadFile
+      SourceUrl="https://thunderstore.io/package/download/AinaVT/LethalConfig/1.4.3/"
+      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/"
+      DestinationFileName="LethalConfig.zip"
+    />
+  </Target>
+
+  <Target Name="FetchLethalConfig" Condition="!Exists('$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll')">
+    <CallTarget Targets="DownloadLethalConfig;" />
+    <MakeDir
+      Directories="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
+    />
+    <Unzip
+      SourceFiles="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip"
+      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
+    />
+    <Move
+      SourceFiles="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage/plugins/LethalConfig/LethalConfig.dll"
+      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/"
+    />
+    <RemoveDir
+      Directories="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
+    />
+    <Delete
+      Files="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip"
+    />
+  </Target>
+
+  <Target Name="FetchNeededAssemblies" BeforeTargets="BeforeCompile;CoreCompile">
+    <CallTarget Targets="FetchLethalConfig;" />
   </Target>
 
 </Project>
