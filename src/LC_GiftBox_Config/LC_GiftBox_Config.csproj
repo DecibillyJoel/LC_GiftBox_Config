@@ -69,7 +69,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)\libs\LethalConfigCompat\LethalConfig.dll" Publicize="true" Private="false"/>
+    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll" Publicize="true" Private="false"/>
   </ItemGroup>
 
 

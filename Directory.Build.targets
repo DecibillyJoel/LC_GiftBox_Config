@@ -62,6 +62,7 @@ internal static class LCMPluginInfo
     <RemoveDir
       Directories="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
     />
+
     <Delete
       Files="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip"
     />
