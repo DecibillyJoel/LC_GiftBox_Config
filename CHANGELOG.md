@@ -1,5 +1,9 @@
-# LC_GiftBox_Config Changelog
+# v1.0.1
+- Updated icon, description, and changelog
+- Added LICENSE.md file to libs.Probability
+- Changed all LICENSE files to LICENSE.md
+- Small code cleanup
+- Added mod category tags
 
-## Describe your changes for each release here
-
-The contents of this file will display in the Changelog tab on the Thunderstore
+# v1.0.0
+- Released
