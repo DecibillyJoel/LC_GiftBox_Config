@@ -15,7 +15,7 @@ using LC_GiftBox_Config.libs.Probability;
 using Object = UnityEngine.Object;
 using Random = System.Random;
 
-namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
+namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches.GiftBoxItemPatches;
 
 [HarmonyPatch(typeof(GiftBoxItem))]
 internal static class GiftBoxItemPatch
@@ -157,25 +157,22 @@ internal static class GiftBoxItemPatch
     internal static bool InsertObjectInPresentAndScrapValue(GiftBoxItem giftbox, Random giftboxBehaviorSeed, Random valueBehaviorSeed)
     {
         int behaviorIndex = Probability.GetRandomWeightedIndex(giftboxBehaviors, giftboxBehaviorSeed);
+
+        giftbox.objectInPresentValue = IGNORE_ITEM_VALUE;
         
         switch (behaviorIndex) {
             case DO_NOTHING: // Gift Box - Do Nothing
                 return false;
             case SPAWN_NOTHING: // Gift Box - Spawn Nothing
-                giftbox.objectInPresentValue = IGNORE_ITEM_VALUE;
-
                 break;
             case SPAWN_STORE_ITEM: // Gift Box - Spawn Store Item
                 int itemIndex = Probability.GetRandomWeightedIndex(filteredStoreItemWeights, giftboxBehaviorSeed);
                 if (itemIndex == -1) {
-                    giftbox.objectInPresentValue = IGNORE_ITEM_VALUE;
                     break;
                 }
 
                 giftbox.objectInPresentItem = filteredStoreItems[itemIndex];
                 giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
-                
-                giftbox.objectInPresentValue = IGNORE_ITEM_VALUE;
 
                 break;
             case SPAWN_GIFTBOX: // Gift Box - Spawn Gift Box
@@ -187,15 +184,14 @@ internal static class GiftBoxItemPatch
                 if (behaviorIndex == SPAWN_SCRAP) {
                     int scrapIndex = Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
                     if (scrapIndex == -1) {
-                        giftbox.objectInPresentValue = IGNORE_ITEM_VALUE;
                         break;
                     }
 
                     giftbox.objectInPresentItem = filteredScrapItems[scrapIndex].spawnableItem;
                     giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
-                } 
+                }
 
-                giftbox.objectInPresentValue = (int)(valueBehaviorSeed.Next(giftbox.objectInPresentItem.minValue, giftbox.objectInPresentItem.maxValue) * RoundManager.Instance.scrapValueMultiplier);
+                giftbox.objectInPresentValue = valueBehaviorSeed.Next(giftbox.objectInPresentItem.minValue, giftbox.objectInPresentItem.maxValue);
 
                 // Gift Box - Inherit Gift Box Value
                 if (valueBehaviorSeed.Next(0, 100) < Plugin.scrapValueIsGiftBoxChance.Value) {
@@ -213,10 +209,12 @@ internal static class GiftBoxItemPatch
                     giftbox.objectInPresentValue = (int)(giftbox.objectInPresentValue * (Plugin.scrapValueMultiplierMin.Value + (Plugin.scrapValueMultiplierMax.Value - Plugin.scrapValueMultiplierMin.Value) * valueBehaviorSeed.NextDouble()) / 100);
                 }
 
-                // Clamp the value and mark the gift box as modified so OverrideOpenGiftBox() knows not to ignore this giftbox (this is dumb)
-                giftbox.objectInPresentValue = -Math.Max(0, giftbox.objectInPresentValue) - 100;
+                // Clamp the scaled value and mark the gift box as modified so OverrideOpenGiftBox() knows not to ignore this giftbox (this is dumb)
+                giftbox.objectInPresentValue = -Math.Max(0, (int)(giftbox.objectInPresentValue * RoundManager.Instance.scrapValueMultiplier)) - 100;
                 
                 break;
+            default:
+                throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.InsertObjectInPresentAndScrapValue] Giftbox Behavior selection failed! This should never happen!");
         }
 
         return true;
@@ -230,12 +228,13 @@ internal static class GiftBoxItemPatch
             return methodIL;
         }
 
-        _filteredStoreItems.Clear();
-        _filteredScrapItems.Clear();
+        filteredStoreItems = null!;
+        filteredScrapItems = null!;
 
         giftboxBehaviors[DO_NOTHING] = Plugin.doNothingChance.Value;
         giftboxBehaviors[SPAWN_STORE_ITEM] = Plugin.spawnStoreItemChance.Value;
         giftboxBehaviors[SPAWN_SCRAP] = Plugin.spawnScrapChance.Value;
+        giftboxBehaviors[SPAWN_GIFTBOX] = Plugin.spawnGiftBoxChance.Value;
         giftboxBehaviors[SPAWN_NOTHING] = Plugin.spawnNothingChance.Value;
 
         List<CodeInstruction> moddedIL = new(methodIL);
@@ -243,13 +242,13 @@ internal static class GiftBoxItemPatch
 
         // Start() destination: if (base.IsServer ** **) 
         MethodInfo method_get_IsServer = typeof(NetworkBehaviour).GetMethod("get_IsServer", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) 
-            ?? throw new Exception("[Patches.GiftBoxItemPatch.Start] NetworkBehaviour.get_IsServer() MethodInfo not accessible");
-        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, method_get_IsServer, errorMessage: "[Patches.GiftBoxItemPatch.Start] method_get_IsServer not found");
-        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Brfalse, errorMessage: "[Patches.GiftBoxItemPatch.Start] OpCodes.Brfalse not found");
+            ?? throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] NetworkBehaviour.get_IsServer() MethodInfo not accessible");
+        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, method_get_IsServer, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] method_get_IsServer not found");
+        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Brfalse, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] OpCodes.Brfalse not found");
 
         // Start() insertion: ** && !GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random) **
         MethodInfo method_InsertObjectInPresentAndScrapValue = typeof(GiftBoxItemPatch).GetMethod("InsertObjectInPresentAndScrapValue", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) 
-            ?? throw new Exception($"[Patches.GiftBoxItemPatch.Start] GiftBoxItemPatch.InsertObjectInPresentAndScrapValue() MethodInfo not accessible");
+            ?? throw new Exception($"[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] GiftBoxItemPatch.InsertObjectInPresentAndScrapValue() MethodInfo not accessible");
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Ldarg_0)); // this
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Ldloc_0)); // this, randomSeed
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Ldloc_1)); // this, randomSeed, random
@@ -302,23 +301,23 @@ internal static class GiftBoxItemPatch
 
             // OpenGiftBoxServerRpc() destination: ** ** GameObject gameObject = null;
             MethodInfo method_get_zero = typeof(Vector3).GetMethod("get_zero", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) 
-                ?? throw new Exception("[Patches.GiftBoxItemPatch.SpawnGiftItem] Vector3.get_zero() MethodInfo not accessible");
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, method_get_zero, errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] method_get_zero not found");
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Ldnull, reverse: true, errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] OpCodes.Ldnull not found");
+                ?? throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Vector3.get_zero() MethodInfo not accessible");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, method_get_zero, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] method_get_zero not found");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Ldnull, reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] OpCodes.Ldnull not found");
 
             // Remove everything before this point
             moddedIL.RemoveRange(0, moddedIndex);
             moddedIndex = 0;
 
             // OpenGiftBoxServerRpc() destination: ** Debug.LogError("Error: There is no object in gift box!"); **
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, "Error: There is no object in gift box!", errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] \"no object\" error message not found");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, "Error: There is no object in gift box!", errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] \"no object\" error message not found");
             
             // OpenGiftBoxServerRpc() deletion: ** Debug.LogError("Error: There is no object in gift box!"); **
             moddedIL.RemoveRange(moddedIndex, 2);
 
             // OpenGiftBoxServerRpc() destination: ** ** component.SetScrapValue(num);
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 1, instructionIsStore: true, errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] Store Local 1 (num) not found");
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 4, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] 1st Load Local 4 (component) not found");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 1, instructionIsStore: true, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Store Local 1 (num) not found");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 4, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] 1st Load Local 4 (component) not found");
 
             // OpenGiftBoxServerRpc() insertion: ** if (num >= 0) **
             Label label_skipScrapValue = generator.DefineLabel();
@@ -328,7 +327,7 @@ internal static class GiftBoxItemPatch
             
             // OpenGiftBoxServerRpc() destination: ** ** component.NetworkObject.Spawn(false);
             moddedIndex++; // Proceed past the previously found local "component"
-            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 4, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatch.SpawnGiftItem] 2nd Load Local 4 (component) not found");
+            ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, localIndex: 4, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] 2nd Load Local 4 (component) not found");
             
             // OpenGiftBoxServerRpc() insertion: ** skipScrapValue: **
             moddedIL.Insert(moddedIndex, new CodeInstruction(OpCodes.Nop));
@@ -353,17 +352,17 @@ internal static class GiftBoxItemPatch
 
         // OpenGiftBoxServerRpc() destination: if (this.__rpc_exec_stage != NetworkBehaviour.__RpcExecStage.Server || (!networkManager.IsServer && !networkManager.IsHost)) { return; } ** **
         FieldInfo field___rpc_exec_stage = typeof(NetworkBehaviour).GetField("__rpc_exec_stage", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) 
-            ?? throw new Exception("[Patches.GiftBoxItemPatch.OpenGiftBoxServerRpc] NetworkBehaviour.__rpc_exec_stage FieldInfo not accessible");
-        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, field___rpc_exec_stage, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatch.OpenGiftBoxServerRpc] 1st field___rpc_exec_stage not found");
+            ?? throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] NetworkBehaviour.__rpc_exec_stage FieldInfo not accessible");
+        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, field___rpc_exec_stage, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] 1st field___rpc_exec_stage not found");
         moddedIndex++; // Proceed past the previously found field "__rpc_exec_stage"
-        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, field___rpc_exec_stage, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatch.OpenGiftBoxServerRpc] 2nd field___rpc_exec_stage not found");
-        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Nop, errorMessage: "[Patches.GiftBoxItemPatch.OpenGiftBoxServerRpc] OpCodes.Nop not found");
+        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, field___rpc_exec_stage, instructionIsStore: false, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] 2nd field___rpc_exec_stage not found");
+        ILTools.FindCodeInstruction(ref moddedIndex, ref moddedIL, OpCodes.Nop, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] OpCodes.Nop not found");
         moddedIndex++; // Proceed past the previously found OpCodes.nop
 
         // OpenGiftBoxServerRpc() insertion: ** if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; } **
         Label label_skipEarlyReturn = generator.DefineLabel();
         MethodInfo method_OverrideOpenGiftBox = typeof(GiftBoxItemPatch).GetMethod("OverrideOpenGiftBox", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public) 
-            ?? throw new Exception("[Patches.GiftBoxItemPatch.OpenGiftBoxServerRpc] GiftBoxItemPatch.OverrideOpenGiftBox() MethodInfo not accessible");
+            ?? throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] GiftBoxItemPatch.OverrideOpenGiftBox() MethodInfo not accessible");
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Ldarg_0)); // this
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Call, method_OverrideOpenGiftBox)); // GiftBoxItemPatch.OverrideOpenGiftBox(this)
         moddedIL.Insert(moddedIndex++, new CodeInstruction(OpCodes.Brfalse, label_skipEarlyReturn)); // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) {} else { undefined; }

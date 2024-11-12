@@ -11,13 +11,13 @@ public static class Probability
     public static int GetRandomWeightedIndex(List<double> weights, Random? randomSeed = null)
     {
         if (weights == null || weights.Count == 0) {
-            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; array is empty or null.");
+            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; list is empty or null.");
 			return -1;
 		}
 
         if (weights.Any(weight => weight < 0.0))
         {
-            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; array contains negative weights.");
+            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; list contains negative weights.");
             return -1;
         }
 
@@ -37,13 +37,13 @@ public static class Probability
     public static int GetRandomWeightedIndex(List<int> weights, Random? randomSeed = null)
     {
         if (weights == null || weights.Count == 0) {
-            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; array is empty or null.");
+            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; list is empty or null.");
 			return -1;
 		}
 
         if (weights.Any(weight => weight < 0))
         {
-            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; array contains negative weights.");
+            Plugin.Log(LogLevel.Warning, "[libs.Probability.GetRandomWeightedIndex] Could not get random weighted index; list contains negative weights.");
             return -1;
         }
 
