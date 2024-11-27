@@ -15,17 +15,25 @@ namespace LC_GiftBox_Config.libs.ILStepper
         public readonly List<CodeInstruction> Instructions;
         public int CurrentIndex;
         public readonly ILGenerator Generator;
-        public readonly Dictionary<int, LocalBuilder> Locals;
+        public readonly Dictionary<int, LocalVariableInfo> Locals;
         public readonly Dictionary<int, Label> Labels;
 
-        public ILStepper(IEnumerable<CodeInstruction> codes, ILGenerator generator, int index = 0)
+        public ILStepper(IEnumerable<CodeInstruction> codes, ILGenerator generator, MethodBase original, int index = 0)
         {
             Instructions = codes.ToList();
+
             CurrentIndex = index;
             Generator = generator;
 
-            Locals = codes.Select(code => (code.operand as LocalBuilder)!).Where(local => local != null).Distinct().ToDictionary(local => local.LocalIndex, local => local);
-            Labels = codes.SelectMany(code => code.labels).Distinct().ToDictionary(label => label.GetHashCode(), label => label);
+            // Find existing LocalVariableInfo (LocalBuilder) parameters from codes
+            Locals = Instructions.Select(code => code.operand as LocalVariableInfo).Where(local => local != null).Distinct().ToDictionary(local => local!.LocalIndex, local => local!);
+            Labels = Instructions.SelectMany(code => code.labels).Distinct().ToDictionary(label => label.GetHashCode(), label => label);
+
+            // Obtain any missing LocalVariableInfos from original MethodBase (needed for locals referred to by short-form instructions)
+            original.GetMethodBody().LocalVariables.DoIf(local => !Locals.ContainsKey(local.LocalIndex), local => Locals.Add(local.LocalIndex, local));
+
+            // Ensure all instructions refer to our canonical version of each local's LocalVariableInfo
+            Instructions.ForEach(code => TrySetLocal(code, code));
         }
 
         public CodeInstruction CurrentInstruction => Instructions[CurrentIndex];
@@ -39,37 +47,37 @@ namespace LC_GiftBox_Config.libs.ILStepper
             return newLabel;
         }
 
-        public LocalBuilder DeclareLocal(Type type, bool pinned = false) {
-            LocalBuilder newLocal = Generator.DeclareLocal(type, pinned);
+        public LocalVariableInfo DeclareLocal(Type type, bool pinned = false) {
+            LocalVariableInfo newLocal = Generator.DeclareLocal(type, pinned);
             Locals.Add(newLocal.LocalIndex, newLocal);
 
             return newLocal;
         }
 
-        public LocalBuilder? TryGetLocal(int localIndex)
+        public LocalVariableInfo? TryGetLocal(int localIndex)
         {
-            return Locals.TryGetValue(localIndex, out LocalBuilder? local) ? local : null;
+            return Locals.TryGetValue(localIndex, out LocalVariableInfo? local) ? local : null;
         }
 
-        public LocalBuilder? TryGetLocal(CodeInstruction codeWithLocal)
+        public LocalVariableInfo? TryGetLocal(CodeInstruction codeWithLocal)
         {
             if (!codeWithLocal.IsLdloc() && !codeWithLocal.IsStloc()) return null;
             return TryGetLocal(codeWithLocal.LocalIndex());
         }
 
-        public LocalBuilder GetLocal(int localIndex, string errorMessage = "No such local variable!")
+        public LocalVariableInfo GetLocal(int localIndex, string errorMessage = "No such local variable!")
         {
             return TryGetLocal(localIndex)
                 ?? throw new Exception($"[libs.ILTools.GetLocal] [{localIndex}] | {errorMessage}");
         }
 
-        public LocalBuilder GetLocal(CodeInstruction codeWithLocal, string errorMessage = "No such local variable!")
+        public LocalVariableInfo GetLocal(CodeInstruction codeWithLocal, string errorMessage = "No such local variable!")
         {
             return TryGetLocal(codeWithLocal)
                 ?? throw new Exception($"[libs.ILTools.GetLocal] [{codeWithLocal}] | {errorMessage}");
         }
 
-        public LocalBuilder? TrySetLocal(CodeInstruction code, LocalBuilder local)
+        public LocalVariableInfo? TrySetLocal(CodeInstruction code, LocalVariableInfo local)
         {
             CodeInstruction newOpcodeAndOperand;
             if (code.IsLdloc())
@@ -91,35 +99,35 @@ namespace LC_GiftBox_Config.libs.ILStepper
             return local;
         }
 
-        public LocalBuilder? TrySetLocal(CodeInstruction code, int localIndex)
+        public LocalVariableInfo? TrySetLocal(CodeInstruction code, int localIndex)
         {
-            LocalBuilder? local = TryGetLocal(localIndex);
+            LocalVariableInfo? local = TryGetLocal(localIndex);
             if (local == null) return null;
 
             return TrySetLocal(code, local);
         }
 
-        public LocalBuilder? TrySetLocal(CodeInstruction code, CodeInstruction codeWithLocal)
+        public LocalVariableInfo? TrySetLocal(CodeInstruction code, CodeInstruction codeWithLocal)
         {
-            LocalBuilder? local = TryGetLocal(codeWithLocal);
+            LocalVariableInfo? local = TryGetLocal(codeWithLocal);
             if (local == null) return null;
 
             return TrySetLocal(code, local);
         }
 
-        public LocalBuilder SetLocal(CodeInstruction code, LocalBuilder local, string errorMessage = "Could not set local!")
+        public LocalVariableInfo SetLocal(CodeInstruction code, LocalVariableInfo local, string errorMessage = "Could not set local!")
         {
             return TrySetLocal(code, local)
                 ?? throw new Exception($"[libs.ILTools.SetLocal] [{code}, {local}] | {errorMessage}");
         }
 
-        public LocalBuilder SetLocal(CodeInstruction code, int localIndex, string errorMessage = "Could not set local!")
+        public LocalVariableInfo SetLocal(CodeInstruction code, int localIndex, string errorMessage = "Could not set local!")
         {
             return TrySetLocal(code, localIndex)
                 ?? throw new Exception($"[libs.ILTools.SetLocal] [{code}, {localIndex}] | {errorMessage}");
         }
 
-        public LocalBuilder SetLocal(CodeInstruction code, CodeInstruction codeWithLocal, string errorMessage = "Could not set local!")
+        public LocalVariableInfo SetLocal(CodeInstruction code, CodeInstruction codeWithLocal, string errorMessage = "Could not set local!")
         {
             return TrySetLocal(code, codeWithLocal)
                 ?? throw new Exception($"[libs.ILTools.SetLocal] [{code}, {codeWithLocal}] | {errorMessage}");
@@ -217,7 +225,7 @@ namespace LC_GiftBox_Config.libs.ILStepper
                 ?? throw new Exception($"[libs.ILTools.GotoIndex] [{index + offset} ({index} + {offset}), {leftBoundOffset} (0 + {leftBoundOffset}), {(Instructions.Count - 1) + rightBoundOffset} ({Instructions.Count - 1} + {rightBoundOffset})] | {errorMessage}");
         }
 
-        public List<CodeInstruction>? TryInsertIL(IEnumerable<CodeInstruction> codeRange, int? index = null, bool shiftCurrentIndex = true, bool pinLabels = true, bool pinBlocks = true)
+        public List<CodeInstruction>? TryInsertIL(List<CodeInstruction> codeRange, int? index = null, bool shiftCurrentIndex = true, bool pinLabels = true, bool pinBlocks = true)
         {
             index = TryFindIndex(index: index, rightBoundOffset: 1);
             if (index == null) return null;
@@ -225,32 +233,26 @@ namespace LC_GiftBox_Config.libs.ILStepper
             codeRange = codeRange.Select(code => {
                 CodeInstruction newCode = new(code);
 
-                if (newCode.operand != null)
-                {
-                    LocalBuilder? local = TryGetLocal(newCode);
-                    if (local != null)
-                    {
-                        newCode.operand = local;
-                    }
-                }
+                // Ensure the code uses our canonical version of LocalVariableInfo
+                TrySetLocal(newCode, newCode);
 
                 return newCode;
-            });
+            }).ToList();
 
-            if (index < Instructions.Count && codeRange.Count() > 0)
+            if (index < Instructions.Count && codeRange.Count > 0)
             {
-                if (pinLabels) Instructions[index.Value].MoveLabelsTo(codeRange.First());
-                if (pinBlocks) Instructions[index.Value].MoveBlocksTo(codeRange.First());
+                if (pinLabels) Instructions[index.Value].MoveLabelsTo(codeRange[0]);
+                if (pinBlocks) Instructions[index.Value].MoveBlocksTo(codeRange[0]);
             }
 
             Instructions.InsertRange(index.Value, codeRange);
             
             if (shiftCurrentIndex && CurrentIndex >= index)
             {
-                CurrentIndex += codeRange.Count();
+                CurrentIndex += codeRange.Count;
             }
 
-            return codeRange.ToList();
+            return codeRange;
         }
 
         public List<CodeInstruction>? TryInsertIL(CodeInstruction? code, int? index = null, bool shiftCurrentIndex = true, bool pinLabels = true, bool pinBlocks = true)
@@ -258,7 +260,7 @@ namespace LC_GiftBox_Config.libs.ILStepper
             return TryInsertIL(codeRange: code != null ? [code] : [], index: index, shiftCurrentIndex: shiftCurrentIndex, pinLabels: pinLabels, pinBlocks: pinBlocks);
         }
 
-        public List<CodeInstruction> InsertIL(IEnumerable<CodeInstruction> codeRange, int? index = null, bool shiftCurrentIndex = true, bool pinLabels = true, bool pinBlocks = true, string errorMessage = "Out of bounds!")
+        public List<CodeInstruction> InsertIL(List<CodeInstruction> codeRange, int? index = null, bool shiftCurrentIndex = true, bool pinLabels = true, bool pinBlocks = true, string errorMessage = "Out of bounds!")
         {
             index ??= CurrentIndex;
             return TryInsertIL(codeRange: codeRange, index: index, shiftCurrentIndex: shiftCurrentIndex, pinLabels: pinLabels, pinBlocks: pinBlocks)
@@ -492,7 +494,7 @@ namespace LC_GiftBox_Config.libs.ILStepper
                 ?? throw new Exception($"[libs.ILTools.ShiftIL] [{startIndex}, {startIndex + endOffset} ({startIndex} + {endOffset}), {startIndex + shiftBy} ({startIndex} + {shiftBy}), {startIndex + endOffset + shiftBy} ({startIndex} + {endOffset} + {shiftBy})] | {errorMessage}");
         }
 
-        public List<CodeInstruction>? TryOverwriteIL(IEnumerable<CodeInstruction> codeRange, int? index = null)
+        public List<CodeInstruction>? TryOverwriteIL(List<CodeInstruction> codeRange, int? index = null)
         {
             if (TryRemoveIL(startIndex: index, endOffset: codeRange.Count(), shiftCurrentIndex: false) == null) return null;
 
@@ -504,7 +506,7 @@ namespace LC_GiftBox_Config.libs.ILStepper
             return TryOverwriteIL(codeRange: code != null ? [code] : [], index: index);
         }
 
-        public List<CodeInstruction> OverwriteIL(IEnumerable<CodeInstruction> codeRange, int? index = null, string errorMessage = "Out of bounds!")
+        public List<CodeInstruction> OverwriteIL(List<CodeInstruction> codeRange, int? index = null, string errorMessage = "Out of bounds!")
         {
             index ??= CurrentIndex;
             return TryOverwriteIL(codeRange, index)

@@ -18,7 +18,7 @@ namespace LC_GiftBox_Config.libs.HarmonyXExtensions;
 
 public static class CodeInstructionPolyfills
 {
-    public static readonly OpCode[] ARGUMENTED_LOCAL_INSTRUCTS = [OpCodes.Ldloc_S, OpCodes.Ldloc, OpCodes.Stloc, OpCodes.Stloc_S, OpCodes.Ldloca_S, OpCodes.Ldloca_S];
+    public static readonly OpCode[] ARGUMENTED_LOCAL_INSTRUCTS = [OpCodes.Ldloc, OpCodes.Stloc, OpCodes.Ldloca, OpCodes.Ldloc_S, OpCodes.Stloc_S, OpCodes.Ldloca_S];
     public static readonly OpCode[] LOAD_FIELD_INSTRUCTS = [OpCodes.Ldfld, OpCodes.Ldsfld, OpCodes.Ldflda, OpCodes.Ldsflda];
     public static readonly OpCode[] STORE_FIELD_INSTRUCTS = [OpCodes.Stfld, OpCodes.Stsfld];
 
@@ -204,7 +204,7 @@ public static class CodeInstructionPolyfills
         else if (code.opcode == OpCodes.Ldloc_1 || code.opcode == OpCodes.Stloc_1) return 1;
         else if (code.opcode == OpCodes.Ldloc_2 || code.opcode == OpCodes.Stloc_2) return 2;
         else if (code.opcode == OpCodes.Ldloc_3 || code.opcode == OpCodes.Stloc_3) return 3;
-        else if (ARGUMENTED_LOCAL_INSTRUCTS.Contains(code.opcode)) return Convert.ToInt32((code.operand as LocalBuilder)?.LocalIndex ?? code.operand);
+        else if (ARGUMENTED_LOCAL_INSTRUCTS.Contains(code.opcode)) return Convert.ToInt32((code.operand as LocalVariableInfo)?.LocalIndex ?? code.operand);
         else throw new ArgumentException("Instruction is not a load or store", nameof(code));
     }
 
@@ -237,14 +237,14 @@ public static class CodeInstructionPolyfills
         }
     }
 
-    /// <summary>Creates a CodeInstruction loading a local with the given LocalBuilder, using the shorter forms when possible</summary>
-    /// <param name="localbuilder">The LocalBuilder of the stored local</param>
+    /// <summary>Creates a CodeInstruction loading a local with the given LocalVariableInfo, using the shorter forms when possible</summary>
+    /// <param name="local">The LocalVariableInfo of the stored local</param>
     /// <param name="useAddress">Use address of local</param>
     /// <returns>The HarmonyLib.CodeInstruction</returns>
     /// <seealso cref="LocalIndex(CodeInstruction)"/>
-    public static CodeInstruction LoadLocal(LocalBuilder localbuilder, bool useAddress = false)
+    public static CodeInstruction LoadLocal(LocalVariableInfo local, bool useAddress = false)
     {
-        return LoadLocal(localbuilder.LocalIndex, useAddress);
+        return LoadLocal(local.LocalIndex, useAddress);
     }
 
     /// <summary>Creates a CodeInstruction storing to a local with the given index, using the shorter forms when possible</summary>
@@ -264,13 +264,13 @@ public static class CodeInstructionPolyfills
         };
     }
 
-    /// <summary>Creates a CodeInstruction storing to a local with the given LocalBuilder, using the shorter forms when possible</summary>
-    /// <param name="localbuilder">The LocalBuilder of the stored local</param>
+    /// <summary>Creates a CodeInstruction storing to a local with the given LocalVariableInfo, using the shorter forms when possible</summary>
+    /// <param name="local">The LocalVariableInfo of the stored local</param>
     /// <returns>The HarmonyLib.CodeInstruction</returns>
     /// <seealso cref="LocalIndex(CodeInstruction)"/>
-    public static CodeInstruction StoreLocal(LocalBuilder localbuilder)
+    public static CodeInstruction StoreLocal(LocalVariableInfo local)
     {
-        return StoreLocal(localbuilder.LocalIndex);
+        return StoreLocal(local.LocalIndex);
     }
 
     //
@@ -286,9 +286,9 @@ public static class CodeInstructionPolyfills
     //
     // Returns:
     //     True if it matches one of the variations
-    public static bool LoadsLocal(this CodeInstruction code, LocalBuilder? builder = null)
+    public static bool LoadsLocal(this CodeInstruction code, LocalVariableInfo? local = null)
     {
-        return code.IsLdloc(builder);
+        return code.IsLdloc() && (local == null || code.LocalIndex() == local.LocalIndex);
     }
 
     //
@@ -322,9 +322,9 @@ public static class CodeInstructionPolyfills
     //
     // Returns:
     //     True if it matches one of the variations
-    public static bool StoresLocal(this CodeInstruction code, LocalBuilder? builder = null)
+    public static bool StoresLocal(this CodeInstruction code, LocalVariableInfo? local = null)
     {
-        return code.IsStloc(builder);
+        return code.IsStloc() && (local == null || code.LocalIndex() == local.LocalIndex);
     }
 
     //

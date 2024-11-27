@@ -2,11 +2,12 @@
 
 ## v1.0.4
 
-- Updated changelog and readme  
+- HUGELY IMPROVED config value names
 - Fixed description newlines not displaying correctly in published package md files  
 - Fixed "x Addition" config descriptions referring to a multiplier rather than an addition  
 - Added config options for modifying a gift box's scrap value and rarity
 - Added config options for anomalously spawning gift boxes within a level, separate from the level's natural scrap pool mechanics
+- Updated changelog and readme
   
 ## v1.0.3
 

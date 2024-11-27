@@ -235,7 +235,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.Start))]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator){
+    internal static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
         {
             return methodIL;
@@ -250,7 +250,7 @@ internal static class GiftBoxItemPatch
         giftboxBehaviors[SPAWN_GIFTBOX] = Plugin.spawnGiftBoxChance.Value;
         giftboxBehaviors[SPAWN_NOTHING] = Plugin.spawnNothingChance.Value;
 
-        ILStepper stepper = new(methodIL, methodGenerator);
+        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
         // Start() destination: if (base.IsServer ** **) 
         stepper.GotoIL(code => code.LoadsProperty(type: typeof(NetworkBehaviour), name: "IsServer"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Property NetworkBehaviour.IsServer not found!");
@@ -299,14 +299,14 @@ internal static class GiftBoxItemPatch
     [HarmonyReversePatch]
     internal static void SpawnGiftItem(GiftBoxItem giftbox)
     {
-        IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator)
+        IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase)
         {
             if (Plugin.giftboxMechanicsDisabled.Value)
             {
                 return methodIL;
             }
 
-            ILStepper stepper = new(methodIL, methodGenerator);
+            ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
             // OpenGiftBoxServerRpc() destination: ** ** GameObject gameObject = null;
             stepper.GotoIL(code => code.StoresLocal(index: 0), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Store Local 0 (gameObject) not found");
@@ -320,7 +320,7 @@ internal static class GiftBoxItemPatch
             
             // OpenGiftBoxServerRpc() deletion: ** Debug.LogError("Error: There is no object in gift box!"); **
             stepper.RemoveIL(
-                endOffset: -stepper.CurrentIndex + stepper.FindIL(code => code.Calls(type: typeof(Debug), name: "LogError", parameters: [typeof(object)]), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Call Debug.LogError(object) not found")
+                endOffset: -stepper.CurrentIndex + 1 + stepper.FindIL(code => code.Calls(type: typeof(Debug), name: "LogError", parameters: [typeof(object)]), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Call Debug.LogError(object) not found")
             );
 
             // OpenGiftBoxServerRpc() destination: component.SetScrapValue(num); ** **
@@ -334,29 +334,29 @@ internal static class GiftBoxItemPatch
             
             // OpenGiftBoxServerRpc() insertion: ** if (num >= 0) { component.SetScrapValue(num); } **
             Label SkipScrapValueLabel = stepper.DeclareLabel();
-            stepper.InsertIL(([
+            stepper.InsertIL([
                 CodeInstructionPolyfills.LoadLocal(1), // num
                 CodeInstructionPolyfills.LoadConstant(0), // num, 0
                 new CodeInstruction(OpCodes.Blt, SkipScrapValueLabel), // if (num >= 0) {} else { undefined; }
                 ..SetScrapValueIL, // if (num >= 0) { component.SetScrapValue(num); } else { undefined; }
                 new CodeInstruction(OpCodes.Nop).WithLabels(SkipScrapValueLabel) // if (num >= 0) { component.SetScrapValue(num); }
-            ]));
+            ]);
 
             return stepper.Instructions;
         }
 
-        _ = Transpiler(null!, null!);
+        _ = Transpiler(null!, null!, null!);
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator){
+    internal static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
         {
             return methodIL;
         }
 
-        ILStepper stepper = new(methodIL, methodGenerator);
+        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
         // OpenGiftBoxServerRpc() destination: { return; } ** ** GameObject gameObject = null;
         stepper.GotoIL(code => code.StoresLocal(index: 0), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.SpawnGiftItem] Store Local 0 (gameObject) not found");
