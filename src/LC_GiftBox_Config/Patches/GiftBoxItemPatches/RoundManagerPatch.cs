@@ -23,27 +23,21 @@ namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 [HarmonyPatch(typeof(RoundManager))]
 internal static class RoundManagerPatch
 {
-    internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, ref List<Item> ScrapToSpawn, int spawnOneItemIndex)
+    internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex)
     {
+        // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
+        if (spawnOneItemIndex != -1 && ScrapToSpawn[0].itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
+
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
-        // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
-        if (spawnOneItemIndex != -1 && ScrapToSpawn[0].itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID)
-        {
-            return;
-        }
-
         // Gift Box - Gift Box Anomalous Spawning
-        if (AnomalyRandom.Next(0, 100) >= Plugin.giftboxSpawnChance.Value)
-        {
-            return;
-        }
+        if (AnomalyRandom.Next(0, 100) >= Plugin.giftboxSpawnChance.Value) return;
 
         int giftboxCount = AnomalyRandom.Next(Plugin.giftboxSpawnMin.Value, Plugin.giftboxSpawnMax.Value + 1);
         ScrapToSpawn.AddRange(Enumerable.Repeat(GiftBoxItemPatch.GIFTBOX_ITEM, giftboxCount));
     }
 
-    internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, ref int[] weights)
+    internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, int[] weights)
     {
         Random AnomalyRandom = roundmanager.AnomalyRandom;
         List<SpawnableItemWithRarity> spawnableScrap = roundmanager.currentLevel.spawnableScrap;
@@ -65,7 +59,7 @@ internal static class RoundManagerPatch
         }
     }
 
-    internal static void AdjustGiftBoxValue(RoundManager roundmanager, GrabbableObject component, ref int[] scrapValues)
+    internal static void AdjustGiftBoxValue(RoundManager roundmanager, GrabbableObject component, int[] scrapValues)
     {
         if (component.itemProperties.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
 
@@ -100,9 +94,9 @@ internal static class RoundManagerPatch
         // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3); **
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
-            CodeInstructionPolyfills.LoadLocal(index: 0), // this, ref compilerClosureObj
-            CodeInstructionPolyfills.LoadField(type: stepper.GetLocal(0).LocalType, name: "ScrapToSpawn", useAddress: true), // this, ref compilerClosureObj.ScrapToSpawn
-            CodeInstructionPolyfills.LoadLocal(index: 2), // this, ref compilerClosureObj.ScrapToSpawn, num3
+            CodeInstructionPolyfills.LoadLocal(index: 0), // this, compilerClosureObj
+            CodeInstructionPolyfills.LoadField(type: stepper.GetLocal(0).LocalType, name: "ScrapToSpawn"), // this, compilerClosureObj.ScrapToSpawn
+            CodeInstructionPolyfills.LoadLocal(index: 2), // this, compilerClosureObj.ScrapToSpawn, num3
             CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AnomalouslySpawnGiftBoxes)) // RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3);
         ]);
 
@@ -113,20 +107,20 @@ internal static class RoundManagerPatch
         // SpawnScrapInLevel() insertion: RoundManager.AdjustGiftBoxSpawnWeight(this, weights);
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
-            CodeInstructionPolyfills.LoadArgument(index: 6, useAddress: true), // this, ref weights
-            CodeInstructionPolyfills.Call(type: typeof(RoundManager), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManager.AdjustGiftBoxSpawnWeight(this, ref weights)
+            CodeInstructionPolyfills.LoadArgument(index: 6), // this, weights
+            CodeInstructionPolyfills.Call(type: typeof(RoundManager), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManager.AdjustGiftBoxSpawnWeight(this, weights)
         ]);
 
         // SpawnScrapInLevel() destination: ** ** num4 += list[list.Count - 1];
         stepper.GotoIL(code => code.StoresField(type: typeof(GrabbableObject), name: "scrapValue"), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store field GrabbableObject.scrapValue not found");
         stepper.GotoIL(code => code.LoadsLocal(index: 4), reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Load Local 4 (num4) not found");
 
-        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AdjustGiftBoxValue(this, component, ref list); ** num4 += list[list.Count - 1];
+        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AdjustGiftBoxValue(this, component, list); ** num4 += list[list.Count - 1];
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.LoadLocal(index: 18), // this, component
-            CodeInstructionPolyfills.LoadLocal(index: 3, useAddress: true), // this, component, ref list
-            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManagerPatch.AdjustGiftBoxValue(this, component, ref list);
+            CodeInstructionPolyfills.LoadLocal(index: 3), // this, component, list
+            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManagerPatch.AdjustGiftBoxValue(this, component, list);
         ]);
 
         return stepper.Instructions;

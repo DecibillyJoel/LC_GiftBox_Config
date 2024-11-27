@@ -168,7 +168,7 @@ internal static class GiftBoxItemPatch
         }
     #endregion
     
-    internal static bool InsertObjectInPresentAndScrapValue(ref GiftBoxItem giftbox, ref Random giftboxBehaviorSeed, ref Random valueBehaviorSeed)
+    internal static bool InsertObjectInPresentAndScrapValue(GiftBoxItem giftbox, Random giftboxBehaviorSeed, Random valueBehaviorSeed)
     {
         int behaviorIndex = Probability.GetRandomWeightedIndex(giftboxBehaviors, giftboxBehaviorSeed);
         if (behaviorIndex == DO_NOTHING) return false; // Gift Box - Do Nothing
@@ -258,10 +258,10 @@ internal static class GiftBoxItemPatch
 
         // Start() insertion: ** && !GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random) **
         stepper.InsertIL(codeRange: [
-            CodeInstructionPolyfills.LoadArgument(0, useAddress: true), // this
-            CodeInstructionPolyfills.LoadLocal(0, useAddress: true), // this, randomSeed
-            CodeInstructionPolyfills.LoadLocal(1, useAddress: true), // this, randomSeed, random
-            CodeInstructionPolyfills.Call(typeof(GiftBoxItemPatch), "InsertObjectInPresentAndScrapValue"), // GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random)
+            CodeInstructionPolyfills.LoadArgument(0), // this
+            CodeInstructionPolyfills.LoadLocal(0), // this, randomSeed
+            CodeInstructionPolyfills.LoadLocal(1), // this, randomSeed, random
+            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(InsertObjectInPresentAndScrapValue)), // GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random)
             new CodeInstruction(OpCodes.Not), // !GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random)
             new CodeInstruction(OpCodes.And) // && !GiftBoxItemPatch.InsertObjectInPresentAndScrapValue(this, randomSeed, random)
         ]);
@@ -367,7 +367,7 @@ internal static class GiftBoxItemPatch
         Label SkipEarlyReturnLabel = stepper.DeclareLabel();
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
-            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: "OverrideOpenGiftBox"), // GiftBoxItemPatch.OverrideOpenGiftBox(this)
+            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(OverrideOpenGiftBox)), // GiftBoxItemPatch.OverrideOpenGiftBox(this)
             new CodeInstruction(OpCodes.Brfalse, SkipEarlyReturnLabel), // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) {} else { undefined; }
             new CodeInstruction(OpCodes.Ret), // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; } else { undefined; }
             new CodeInstruction(OpCodes.Nop).WithLabels(SkipEarlyReturnLabel) // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; }
