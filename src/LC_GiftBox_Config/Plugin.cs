@@ -7,6 +7,7 @@ using System;
 using HarmonyLib;
 
 using LC_GiftBox_Config.libs.LethalConfigNicerizer;
+using System.Collections.Generic;
 
 /*
     Here are some basic resources on code style and naming conventions to help
@@ -147,10 +148,10 @@ public class Plugin : BaseUnityPlugin
         giftboxValueMultiplierMin = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Scrap Value", "Multiplier Minimum (%)", 120, new ConfigDescription("The minimum possible value of the multiplier applied to the gift box's scrap value    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), [])));
         giftboxValueMultiplierMax = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Scrap Value", "Multiplier Maximum (%)", 150, new ConfigDescription("The maximum possible value of the multiplier applied to the gift box's scrap value    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), [])));
 
-        giftboxRarityAdditionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Weight", "Addition Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of gift boxes receiving an addition to their spawn weight within the current level    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
+        giftboxRarityAdditionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Addition Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of gift boxes receiving an addition to their spawn weight within the current level    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
         giftboxRarityAdditionMin = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Addition Minimum", 30, new ConfigDescription("The minimum possible value of the addition applied to gift boxes' spawn weight within the current level    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), [])));
         giftboxRarityAdditionMax = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Addition Maximum", 60, new ConfigDescription("The maximum possible value of the addition applied to gift boxes' spawn weight within the current level    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), [])));
-        giftboxRarityMultiplierChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chanceg", "Multiplier Chance (%)", 35, new ConfigDescription("The likelihood (% chance) of gift boxes receiving a multiplier to their spawn weight within the current level    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
+        giftboxRarityMultiplierChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Multiplier Chance (%)", 35, new ConfigDescription("The likelihood (% chance) of gift boxes receiving a multiplier to their spawn weight within the current level    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
         giftboxRarityMultiplierMin = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Multiplier Minimum", 120, new ConfigDescription("The minimum possible value of the multiplier applied to gift boxes' spawn weight within the current level    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), [])));
         giftboxRarityMultiplierMax = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Chance", "Multiplier Maximum", 150, new ConfigDescription("The maximum possible value of the multiplier applied to gift boxes' spawn weight within the current level    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), [])));
 
@@ -184,64 +185,86 @@ public class Plugin : BaseUnityPlugin
         storeItemPriceInfluence = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Store Item Selection", "Price Influence (%)", -100, new ConfigDescription("How much influence a store item's price has over its selection weight.     \n0 = store item's price does not influence its selection weight    \nLarger influence percentage = expensive store items are more likely than cheap store items    \nNegative influence percentage = expensive store items are less likely than cheap store items    \n    \nEach selectable store item is given a selection weight equal to their store price raised to the power of this percentage (i.e. 100% = 100 / 10    \n0 = 1, so the exponent is 1). e.g. if this percentage is set to 200%, a store item with a price of 2 has a selection weight of 4 (2 ^ 200% = 2 ^ 2 = 4), which is four times the selection weight of a store item with a price of 1 and therefore a selection weight of 1 (1 ^ 200% = 1 ^ 2 = 1). If this value is negative, then the selection weights are inverted - e.g. -100% results in a store item with a price of 2 receiving a selection weight of 0.5 (2 ^ -100% = 2 ^ -1 = 1 / (2 ^ 1) = 1 / 2 = 0.5)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(-1000, 1000), [])));
 
         // Migrate old names to new names
-        MigrateEntry("Gift Box - Toggle", "Disable modded mechanics", giftboxMechanicsDisabled);
+        MigrateEntries(
+            ("Gift Box - Toggle", "Disable modded mechanics", giftboxMechanicsDisabled),
 
-        MigrateEntry("Gift Box - Gift Box Value", "Chance for the gift box to receive scrap value addition (%)", giftboxValueAdditionChance);
-        MigrateEntry("Gift Box - Gift Box Value", "Minimum gift box value addition", giftboxValueAdditionMin);
-        MigrateEntry("Gift Box - Gift Box Value", "Maximum gift box value addition", giftboxValueAdditionMax);
-        MigrateEntry("Gift Box - Gift Box Value", "Chance for gift box to receive scrap value multiplier (%)", giftboxValueMultiplierChance);
-        MigrateEntry("Gift Box - Gift Box Value", "Minimum gift box value multiplier (%)", giftboxValueMultiplierMin);
-        MigrateEntry("Gift Box - Gift Box Value", "Maximum gift box value multiplier (%)", giftboxValueMultiplierMax);
+            ("Gift Box - Gift Box Value", "Chance for the gift box to receive scrap value addition (%)", giftboxValueAdditionChance),
+            ("Gift Box - Gift Box Value", "Minimum gift box value addition", giftboxValueAdditionMin),
+            ("Gift Box - Gift Box Value", "Maximum gift box value addition", giftboxValueAdditionMax),
+            ("Gift Box - Gift Box Value", "Chance for gift box to receive scrap value multiplier (%)", giftboxValueMultiplierChance),
+            ("Gift Box - Gift Box Value", "Minimum gift box value multiplier (%)", giftboxValueMultiplierMin),
+            ("Gift Box - Gift Box Value", "Maximum gift box value multiplier (%)", giftboxValueMultiplierMax),
 
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Chance for gift boxes to receive spawn weight addition (%)", giftboxRarityAdditionChance);
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Minimum gift box spawn weight addition", giftboxRarityAdditionMin);
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Maximum gift box spawn weight addition", giftboxRarityAdditionMax);
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Chance for gift boxes to receive spawn weight multiplier (%)", giftboxRarityMultiplierChance);
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Minimum gift box spawn weight multiplier (%)", giftboxRarityMultiplierMin);
-        MigrateEntry("Gift Box - Gift Box Natural Spawn Chance", "Maximum gift box spawn weight multiplier (%)", giftboxRarityMultiplierMax);
+            ("Gift Box - Gift Box Natural Spawn Chance", "Chance for gift boxes to receive spawn weight addition (%)", giftboxRarityAdditionChance),
+            ("Gift Box - Gift Box Natural Spawn Chance", "Minimum gift box spawn weight addition", giftboxRarityAdditionMin),
+            ("Gift Box - Gift Box Natural Spawn Chance", "Maximum gift box spawn weight addition", giftboxRarityAdditionMax),
+            ("Gift Box - Gift Box Natural Spawn Chance", "Chance for gift boxes to receive spawn weight multiplier (%)", giftboxRarityMultiplierChance),
+            ("Gift Box - Gift Box Natural Spawn Chance", "Minimum gift box spawn weight multiplier (%)", giftboxRarityMultiplierMin),
+            ("Gift Box - Gift Box Natural Spawn Chance", "Maximum gift box spawn weight multiplier (%)", giftboxRarityMultiplierMax),
 
-        MigrateEntry("Gift Box - Gift Box Anomalous Spawning", "Chance for gift boxes to anomalously spawn (%)", giftboxSpawnChance);
-        MigrateEntry("Gift Box - Gift Box Anomalous Spawning", "Minimum number of anomalously spawned gift boxes", giftboxSpawnMin);
-        MigrateEntry("Gift Box - Gift Box Anomalous Spawning", "Maximum number of anomalously spawned gift boxes", giftboxSpawnMax);
+            ("Gift Box - Gift Box Anomalous Spawning", "Chance for gift boxes to anomalously spawn (%)", giftboxSpawnChance),
+            ("Gift Box - Gift Box Anomalous Spawning", "Minimum number of anomalously spawned gift boxes", giftboxSpawnMin),
+            ("Gift Box - Gift Box Anomalous Spawning", "Maximum number of anomalously spawned gift boxes", giftboxSpawnMax),
 
-        MigrateEntry("Gift Box - Behavior Selection", "Chance to select a store item (Selection Weight)", spawnStoreItemChance);
-        MigrateEntry("Gift Box - Behavior Selection", "Chance to select a scrap item (Selection Weight)", spawnScrapChance);
-        MigrateEntry("Gift Box - Behavior Selection", "Chance to select another gift box (Selection Weight)", spawnGiftBoxChance);
-        MigrateEntry("Gift Box - Behavior Selection", "Chance to select no item (Selection Weight)", spawnNothingChance);
-        MigrateEntry("Gift Box - Behavior Selection", "Chance to leave gift box unmodified (Selection Weight)", doNothingChance);
+            ("Gift Box - Behavior Selection", "Chance to select a store item (Selection Weight)", spawnStoreItemChance),
+            ("Gift Box - Behavior Selection", "Chance to select a scrap item (Selection Weight)", spawnScrapChance),
+            ("Gift Box - Behavior Selection", "Chance to select another gift box (Selection Weight)", spawnGiftBoxChance),
+            ("Gift Box - Behavior Selection", "Chance to select no item (Selection Weight)", spawnNothingChance),
+            ("Gift Box - Behavior Selection", "Chance to leave gift box unmodified (Selection Weight)", doNothingChance),
 
-        MigrateEntry("Gift Box - Scrap Selection", "Minimum selectable scrap value", scrapValueMin);
-        MigrateEntry("Gift Box - Scrap Selection", "Maximum selectable scrap value", scrapValueMax);
-        MigrateEntry("Gift Box - Scrap Selection", "Scrap value influence percentage (%)", scrapValueInfluence);
-        MigrateEntry("Gift Box - Scrap Selection", "Minimum selectable scrap spawn weight", scrapRarityMin);
-        MigrateEntry("Gift Box - Scrap Selection", "Maximum selectable scrap spawn weight", scrapRarityMax);
-        MigrateEntry("Gift Box - Scrap Selection", "Scrap spawn weight influence percentage (%)", scrapRarityInfluence);
+            ("Gift Box - Scrap Selection", "Minimum selectable scrap value", scrapValueMin),
+            ("Gift Box - Scrap Selection", "Maximum selectable scrap value", scrapValueMax),
+            ("Gift Box - Scrap Selection", "Scrap value influence percentage (%)", scrapValueInfluence),
+            ("Gift Box - Scrap Selection", "Minimum selectable scrap spawn weight", scrapRarityMin),
+            ("Gift Box - Scrap Selection", "Maximum selectable scrap spawn weight", scrapRarityMax),
+            ("Gift Box - Scrap Selection", "Scrap spawn weight influence percentage (%)", scrapRarityInfluence),
 
-        MigrateEntry("Gift Box - Scrap Item Value", "Chance for scrap item to inherit gift box value (%)", scrapValueIsGiftBoxChance);
-        MigrateEntry("Gift Box - Scrap Item Value", "Chance for scrap item to receive scrap value addition (%)", scrapValueAdditionChance);
-        MigrateEntry("Gift Box - Scrap Item Value", "Minimum scrap item value addition", scrapValueAdditionMin);
-        MigrateEntry("Gift Box - Scrap Item Value", "Maximum scrap item value addition", scrapValueAdditionMax);
-        MigrateEntry("Gift Box - Scrap Item Value", "Chance for scrap item to receive scrap value multiplier (%)", scrapValueMultiplierChance);
-        MigrateEntry("Gift Box - Scrap Item Value", "Minimum scrap item value multiplier (%)", scrapValueMultiplierMin);
-        MigrateEntry("Gift Box - Scrap Item Value", "Maximum scrap item value multiplier (%)", scrapValueMultiplierMax);
+            ("Gift Box - Scrap Item Value", "Chance for scrap item to inherit gift box value (%)", scrapValueIsGiftBoxChance),
+            ("Gift Box - Scrap Item Value", "Chance for scrap item to receive scrap value addition (%)", scrapValueAdditionChance),
+            ("Gift Box - Scrap Item Value", "Minimum scrap item value addition", scrapValueAdditionMin),
+            ("Gift Box - Scrap Item Value", "Maximum scrap item value addition", scrapValueAdditionMax),
+            ("Gift Box - Scrap Item Value", "Chance for scrap item to receive scrap value multiplier (%)", scrapValueMultiplierChance),
+            ("Gift Box - Scrap Item Value", "Minimum scrap item value multiplier (%)", scrapValueMultiplierMin),
+            ("Gift Box - Scrap Item Value", "Maximum scrap item value multiplier (%)", scrapValueMultiplierMax),
 
-        MigrateEntry("Gift Box - Store Item Selection", "Minimum selectable store item price", storeItemPriceMin);
-        MigrateEntry("Gift Box - Store Item Selection", "Maximum selectable store item price", storeItemPriceMax);
-        MigrateEntry("Gift Box - Store Item Selection", "Store item price influence percentage (%)", storeItemPriceInfluence);
+            ("Gift Box - Store Item Selection", "Minimum selectable store item price", storeItemPriceMin),
+            ("Gift Box - Store Item Selection", "Maximum selectable store item price", storeItemPriceMax),
+            ("Gift Box - Store Item Selection", "Store item price influence percentage (%)", storeItemPriceInfluence)
+        );
 
         ValidateConfigAndApplyPatches();
 
         Log($"[v{LCMPluginInfo.PLUGIN_VERSION}] Finished loading!");
     }
 
-    private void MigrateEntry<T>(string oldSection, string oldKey, ConfigEntry<T> newEntry)
+    private void MigrateEntries(params (string oldSection, string oldKey, ConfigEntryBase newEntry)[] migrations)
     {
-        if (!Config.TryGetEntry(oldSection, oldKey, out ConfigEntry<T> oldEntry)) return;
+        var orphanedEntries = (Dictionary<ConfigDefinition, string>?) AccessTools.DeclaredPropertyGetter(typeof(ConfigFile), "OrphanedEntries")?.Invoke(Config, []);
+        if (orphanedEntries == null)
+        {
+            Log(LogLevel.Warning, "Unable to retrieve orphaned entries!");
+            return;
+        }
 
-        Log($"Migrating [{oldSection}].[{oldKey}] to [{newEntry.Definition.Section}].[{newEntry.Definition.Key}]...");
+        int migrationsPerformed = 0;
+        migrations.Do(migration =>
+        {
+            // Apparently this works since this is what is done internally anyway
+            ConfigDefinition oldDefinition = new(migration.oldSection, migration.oldKey);
+            if (!orphanedEntries.TryGetValue(oldDefinition, out string orphanedEntryText)) return;
 
-        newEntry.Value = oldEntry.Value;
-        Config.Remove(oldEntry.Definition);
+            migration.newEntry.SetSerializedValue(orphanedEntryText);
+
+            migrationsPerformed++;
+            Log($"[{migrationsPerformed} Migrated [{oldDefinition.Section}].[{oldDefinition.Key}] to [{migration.newEntry.Definition.Section}].[{migration.newEntry.Definition.Key}]");
+            
+            orphanedEntries.Remove(oldDefinition);
+        });
+
+        if (migrationsPerformed == 0) return;
+
+        Log($"Successfully migrated {migrationsPerformed} orphan entries! Saving to file...");
+        Config.Save();
+        Log($"Migrations saved to file!");
     }
-
 }

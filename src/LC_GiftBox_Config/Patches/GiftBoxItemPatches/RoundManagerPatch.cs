@@ -26,7 +26,7 @@ internal static class RoundManagerPatch
     internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex)
     {
         // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
-        if (spawnOneItemIndex != -1 && ScrapToSpawn[0].itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
+        if (spawnOneItemIndex != -1 && roundmanager.currentLevel.spawnableScrap[spawnOneItemIndex].spawnableItem.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
 
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
@@ -88,9 +88,10 @@ internal static class RoundManagerPatch
 
         ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
-        // SpawnScrapInLevel() destination: ** ** Debug.Log(string.Format("Number of scrap to spawn: {0}. minTotalScrapValue: {1}. Total value of items: {2}.", yadda yadda);
-        stepper.GotoIL(code => code.LoadsString("Number of scrap to spawn: {0}. minTotalScrapValue: {1}. Total value of items: {2}."), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] scrap debug string not found");
-        
+        // SpawnScrapInLevel() destination: compilerClosureObj.ScrapToSpawn = new List<Item>(); ** **
+        stepper.GotoIL(code => code.StoresField(type: stepper.GetLocal(0).LocalType, name: "ScrapToSpawn"), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store Field compilerClosureObj.ScrapToSpawn not found");
+        stepper.GotoIndex(offset: 1);
+
         // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3); **
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this

@@ -30,7 +30,8 @@ internal static class GiftBoxItemPatch
         internal static Item _GIFTBOX_ITEM = null!;
         internal static Item GIFTBOX_ITEM {
             get { 
-                return _GIFTBOX_ITEM ??= StartOfRound.Instance.allItemsList.itemsList.First(item => item.itemId == GIFTBOX_ITEM_ID);
+                _GIFTBOX_ITEM ??= StartOfRound.Instance.allItemsList.itemsList.First(item => item.itemId == GIFTBOX_ITEM_ID);
+                return _GIFTBOX_ITEM;
             }
         }
     #endregion
