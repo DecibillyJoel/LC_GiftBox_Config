@@ -1,8 +1,8 @@
-## https://github.com/Malcolm-Q/LC-LateGameUpgrades/blob/main/LICENSE ##
+# <https://github.com/BepInEx/HarmonyX/blob/master/LICENSE> #
 
 MIT License
 
-Copyright (c) 2023 Malcolm
+Copyright (c) 2020 BepInEx
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

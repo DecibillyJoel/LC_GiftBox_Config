@@ -1,3 +1,5 @@
+# <https://github.com/DecibillyJoel/LC_GiftBox_Config>
+
 MIT License
 
 Copyright (c) 2024 DBJ
