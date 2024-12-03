@@ -237,6 +237,17 @@ internal static class GiftBoxItemPatch
         return true;
     }
 
+    internal class GiftBoxItemSeeds : MonoBehaviour 
+    {
+        internal Random? EggsplosionRandom = null;
+    }
+
+    internal static void AddRandomSeeds(GiftBoxItem giftbox)
+    {
+        GiftBoxItemSeeds seeds = giftbox.gameObject.AddComponent<GiftBoxItemSeeds>();
+        seeds.EggsplosionRandom = new Random((int)giftbox.targetFloorPosition.x + (int)giftbox.targetFloorPosition.y);
+    }
+
     [HarmonyPatch(nameof(GiftBoxItem.Start))]
     [HarmonyTranspiler]
     internal static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
@@ -255,6 +266,16 @@ internal static class GiftBoxItemPatch
         giftboxBehaviors[SPAWN_NOTHING] = Plugin.spawnNothingChance.Value;
 
         ILStepper stepper = new(methodIL, methodGenerator, methodBase);
+
+        // Start() destination: base.Start(); ** **
+        stepper.GotoIL(code => code.Calls(type: typeof(GrabbableObject), name: "Start"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Call GrabbableObject.Start() not found!");
+        stepper.GotoIndex(offset: 1);
+
+        // Start() insertion: GiftBoxItemPatch.AddRandomSeeds(this);
+        stepper.InsertIL([
+            CodeInstructionPolyfills.LoadArgument(index: 0), // this
+            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(AddRandomSeeds))
+        ]);
 
         // Start() destination: if (base.IsServer ** **) 
         stepper.GotoIL(code => code.LoadsProperty(type: typeof(NetworkBehaviour), name: "IsServer"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Property NetworkBehaviour.IsServer not found!");
@@ -412,8 +433,9 @@ internal static class GiftBoxItemPatch
     internal static void Eggsplosion(GiftBoxItem giftbox)
     {
         // Empty Gift Box Eggsplosion Chance
-        Random AnomalyRandom = RoundManager.Instance.AnomalyRandom;
-        if (AnomalyRandom.Next(0, 100) >= Plugin.giftboxSpawnChance.Value) return;
+        Random? EggsplosionRandom = giftbox.GetComponent<GiftBoxItemSeeds>()?.EggsplosionRandom;
+        if (EggsplosionRandom == null) return;
+        if (EggsplosionRandom.Next(0, 100) >= Plugin.giftboxEggsplosionChance.Value) return;
 
         if (EGGSPLOSION != null)
         {
