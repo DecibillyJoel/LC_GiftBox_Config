@@ -1,4 +1,14 @@
 # CHANGELOG  
+
+## v1.0.6  
+  
+- Added missing v1.0.5 changes to the changelog
+- Improved readme formatting for Gale mod manager
+  
+## v1.0.5  
+  
+- Fixed Eggsplosion chance not using the Eggsplosion Chance config  
+- Fixed potential desync of Eggsplosion Chance  
   
 ## v1.0.4  
   
