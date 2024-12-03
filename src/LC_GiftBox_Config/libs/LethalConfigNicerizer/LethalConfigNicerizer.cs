@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using LethalConfig;
-using MonoMod.Utils;
 
 namespace LC_GiftBox_Config.libs.LethalConfigNicerizer;
 

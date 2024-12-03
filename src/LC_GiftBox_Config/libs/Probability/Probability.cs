@@ -31,7 +31,7 @@ public static class Probability
         double randomValue = randomSeed.NextDouble() * weights.Sum();
         double accumulatedValue = 0.0;
 
-        return weights.FindIndex((weight) => (accumulatedValue += weight) >= randomValue);
+        return weights.FindIndex((weight) => (accumulatedValue += weight) > randomValue);
     }
 
     public static int GetRandomWeightedIndex(List<int> weights, Random? randomSeed = null)
@@ -57,6 +57,6 @@ public static class Probability
         int randomValue = randomSeed.Next(0, totalWeight);
         int accumulatedValue = 0;
 
-        return weights.FindIndex((weight) => (accumulatedValue += weight) >= randomValue);
+        return weights.FindIndex((weight) => (accumulatedValue += weight) > randomValue);
     }
 }

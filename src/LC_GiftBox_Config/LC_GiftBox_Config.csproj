@@ -11,7 +11,7 @@
     <AssemblyName>com.github.decibillyjoel.lc_giftbox_config</AssemblyName>
     <Authors>DBJ</Authors>
     <TsTeam>DBJ</TsTeam>
-    <Description>Configure how the gift box filters and spawns scrap items + store items, and modifies their scrap values</Description>
+    <Description>Configure gift boxes / presents, such as having store items / scrap / another present / nothing, weighting of item selection, spawn rates, etc.</Description>
     <Product>LC_GiftBox_Config</Product>
     <!--
       Except this, you should keep this up to date with your publishing tags.
