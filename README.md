@@ -65,5 +65,5 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 ## Credits  
   
 * [Mom_Llama (@mamallama on LC Modding Discord)](https://thunderstore.io/c/lethal-company/p/Mom_Llama/) for creating this [LC Modding Template & Tutorial](https://lethalcompanymodding.github.io/Thunderstore/www/Guides/Your-First-Mod.html)  
-* [malco (@Malcolm-Q on GitHub)](https://thunderstore.io/c/lethal-company/p/malco/) for creating this [IL Transpiler Helper](https://github.com/Malcolm-Q/LC-LateGameUpgrades/blob/main/MoreShipUpgrades/Misc/Util/Tools.cs)  
-* [RedCrowbar (@landonk89 on GitHub)](https://thunderstore.io/c/lethal-company/p/RedCrowbar/) for creating this [Reflection Access Helper](https://github.com/landonk89/Buffed-Presents/blob/main/Source/AccessExtensions.cs)  
+* [malco (@Malcolm-Q on GitHub)](https://thunderstore.io/c/lethal-company/p/malco/) for creating this [IL Transpiler Helper](https://github.com/Malcolm-Q/LC-LateGameUpgrades/blob/main/MoreShipUpgrades/Misc/Util/Tools.cs), which inspired the design for the ILStepper class I created for this mod + future mods  
+* [RedCrowbar (@landonk89 on GitHub)](https://thunderstore.io/c/lethal-company/p/RedCrowbar/) for creating this [Reflection Access Helper](https://github.com/landonk89/Buffed-Presents/blob/main/Source/AccessExtensions.cs), from which I learned how to use reflections and implement it within the ILStepper class  

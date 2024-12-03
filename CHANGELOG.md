@@ -1,9 +1,13 @@
 # CHANGELOG  
-
+  
+## v1.0.7  
+  
+- Added more detailed reasoning to credits section of readme  
+  
 ## v1.0.6  
   
-- Added missing v1.0.5 changes to the changelog
-- Improved readme formatting for Gale mod manager
+- Added missing v1.0.5 changes to the changelog  
+- Improved readme formatting for Gale mod manager  
   
 ## v1.0.5  
   
