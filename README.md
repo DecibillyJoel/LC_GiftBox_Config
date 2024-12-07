@@ -4,13 +4,6 @@
 Configure gift boxes / presents, such as having store items / scrap / another present / nothing, weighting of item selection, spawn rates, etc.  
   
 ## Config Options  
-
-### Gift Box Behaviors  
-  
-* Disable All Mod Mechanics  
-* Disable Gift Box Duplicate Sounds Bugfix  
-* Disable Gift Box Setting Tool Scrap Value Bugfix  
-* Empty Gift Box Eggsplosion Chance (%)  
   
 ### Contained Item Type  
   
@@ -44,16 +37,16 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Multiplier Chance (%)  
 * Multiplier Minimum  
 * Multiplier Maximum  
-
+  
 ### Gift Box Spawn Weight  
-
+  
 * Addition Chance (%)  
 * Addition Minimum  
 * Addition Maximum  
 * Multiplier Chance (%)  
 * Multiplier Minimum  
 * Multiplier Maximum  
-
+  
 ### Gift Box Spawn Anomaly  
   
 *(An anomaly that causes additional gift boxes to spawn into a level, separately from the standard scrap pool mechanics)*  
@@ -62,8 +55,19 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Minimum Gift Boxes  
 * Maximum Gift Boxes  
   
+### Gift Box Behaviors  
+  
+* Empty Gift Box Eggsplosion Chance (%)  
+  
+### Compatibility / Debugging  
+  
+* Disable All Mod Mechanics  
+* Disable Gift Box Duplicate Sounds Bugfix  
+* Disable Gift Box Setting Tool Scrap Value Bugfix  
+  
 ## Credits  
   
 * [Mom_Llama (@mamallama on LC Modding Discord)](https://thunderstore.io/c/lethal-company/p/Mom_Llama/) for creating this [LC Modding Template & Tutorial](https://lethalcompanymodding.github.io/Thunderstore/www/Guides/Your-First-Mod.html)  
 * [malco (@Malcolm-Q on GitHub)](https://thunderstore.io/c/lethal-company/p/malco/) for creating this [IL Transpiler Helper](https://github.com/Malcolm-Q/LC-LateGameUpgrades/blob/main/MoreShipUpgrades/Misc/Util/Tools.cs), which inspired the design for the ILStepper class I created for this mod + future mods  
 * [RedCrowbar (@landonk89 on GitHub)](https://thunderstore.io/c/lethal-company/p/RedCrowbar/) for creating this [Reflection Access Helper](https://github.com/landonk89/Buffed-Presents/blob/main/Source/AccessExtensions.cs), from which I learned how to use reflections and implement it within the ILStepper class  
+  

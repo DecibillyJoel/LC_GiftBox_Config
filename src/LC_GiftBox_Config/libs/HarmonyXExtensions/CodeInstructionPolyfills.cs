@@ -119,6 +119,19 @@ public static class CodeInstructionPolyfills
         return Transpilers.EmitDelegate(closure);
     }
 
+    /// <summary>Creates a CodeInstruction calling a constructor (NEWOBJ)</summary>
+    /// <param name="type">The class/type where the constructor is declared</param>
+    /// <param name="parameters">Optional parameters to target a specific overload of the constructor</param>
+    /// <param name="searchForStatic">Optional parameters to only consider static constructors</param>
+    /// <returns>A code instruction that calls the constructor matching the arguments</returns>
+    ///
+    public static CodeInstruction CallConstructor(Type type, Type[]? parameters = null, bool searchForStatic = false)
+    {
+        var ctor = AccessTools.Constructor(type, parameters, searchForStatic) 
+            ?? throw new ArgumentException($"No constructor found for type={type}, parameters={parameters.Description()}, searchForStatic={searchForStatic}");
+        return new CodeInstruction(OpCodes.Newobj, ctor);
+    }
+
     // --- FIELDS
 
     /// <summary>Creates a CodeInstruction loading a field (LD[S]FLD[A])</summary>

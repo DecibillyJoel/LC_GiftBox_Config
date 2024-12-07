@@ -16,7 +16,7 @@
     <!--
       Except this, you should keep this up to date with your publishing tags.
     -->
-    <Version>1.0.7</Version>
+    <Version>1.1.0</Version>
 
     <!--
       Access private fields
@@ -54,6 +54,10 @@
       Include="LethalCompany.GameLibs.Steam"
       Version="62.0.0-ngd.0"
     />
+    <PackageReference 
+      Include="Xilophor.StaticNetcodeLib" 
+      Version="1.1.1" 
+    />
 
     <!--
       When adding additional references, ensure you use <Private>false</Private> to
@@ -69,7 +73,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll" Publicize="true" Private="false"/>
+    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll" Publicize="true" Private="false" />
   </ItemGroup>
 
 

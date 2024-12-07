@@ -28,6 +28,12 @@
           "UnityEngine.Modules": "2022.3.9"
         }
       },
+      "Xilophor.StaticNetcodeLib": {
+        "type": "Direct",
+        "requested": "[1.1.1, )",
+        "resolved": "1.1.1",
+        "contentHash": "GuyG0+b5lt84iWVMb9TbRnjJbDAjG2luWglh1wiCweE/uz+KlAMDvNIWoFWF21zYIkt+ABpwV9YQaW78ge5TNQ=="
+      },
       "BepInEx.BaseLib": {
         "type": "Transitive",
         "resolved": "5.4.20",

@@ -18,6 +18,7 @@ using Random = System.Random;
 namespace LC_GiftBox_Config;
 
 [BepInPlugin(LCMPluginInfo.PLUGIN_GUID, $"{LCMPluginInfo.PLUGIN_TS_TEAM}.{LCMPluginInfo.PLUGIN_NAME}", LCMPluginInfo.PLUGIN_VERSION)]
+[BepInDependency(StaticNetcodeLib.StaticNetcodeLib.Guid, BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency(LethalConfigNicerizer.LethalConfig_GUID, BepInDependency.DependencyFlags.SoftDependency)]
 
 public class Plugin : BaseUnityPlugin
@@ -142,11 +143,6 @@ public class Plugin : BaseUnityPlugin
         PluginLogger = Logger;
         Log($"[v{LCMPluginInfo.PLUGIN_VERSION}] Loading...");
 
-        giftboxMechanicsDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Disable All Mod Mechanics", false, new ConfigDescription("Toggle this setting to disable the modded gift box mechanics")));
-        giftboxDupeSoundsBugFixDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Disable Gift Box Duplicate Sounds Bugfix", false, new ConfigDescription("Toggle this setting to disable the gift box duplicate sounds bugfix")));
-        giftboxToolScrapValueBugfixDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Disable Gift Box Setting Tool Scrap Value Bugfix", false, new ConfigDescription("Toggle this setting to disable the bugfix for the gift box setting a tool's scrap value")));
-        giftboxEggsplosionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Empty Gift Box Eggsplosion Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of an empty gift box non-harmfully eggsploding (it won't harm you, but it may attract enemies who will)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
-
         spawnStoreItemChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Store Item Chance (Selection Weight)", 50, new ConfigDescription("The selection weight of a gift box containing a store item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 1000), [])));
         spawnScrapChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Scrap Item Chance (Selection Weight)", 30, new ConfigDescription("The selection weight of a gift box containing a scrap item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 100]", new AcceptableValueRange<int>(0, 1000), [])));
         spawnGiftBoxChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Gift Box Chance (Selection Weight)", 5, new ConfigDescription("The selection weight of a gift box containing another gift box.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 1000), [])));
@@ -190,10 +186,14 @@ public class Plugin : BaseUnityPlugin
         giftboxSpawnMin = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Anomaly", "Minimum Gift Boxes", 2, new ConfigDescription("The minimum possible number of gift boxes to be anomalously spawned    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 100), [])));
         giftboxSpawnMax = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Anomaly", "Maximum Gift Boxes", 5, new ConfigDescription("The maximum possible number of gift boxes to be anomalously spawned    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 100), [])));
 
+        giftboxEggsplosionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Empty Gift Box Eggsplosion Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of an empty gift box non-harmfully eggsploding (it won't harm you, but it may attract enemies who will)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
+
+        giftboxMechanicsDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Compatibility / Debugging", "Disable All Mod Mechanics", false, new ConfigDescription("WARNING: May cause unexpected game behaviors, desyncs, or loss / corruption of mod-related save data! Do not use this setting unless you know what you're doing!    \n    \nToggle this setting to disable the modded gift box mechanics")));
+        giftboxDupeSoundsBugFixDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Compatibility / Debugging", "Disable Gift Box Duplicate Sounds Bugfix", false, new ConfigDescription("Toggle this setting to disable the gift box duplicate sounds bugfix")));
+        giftboxToolScrapValueBugfixDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Compatibility / Debugging", "Disable Gift Box Setting Tool Scrap Value Bugfix", false, new ConfigDescription("Toggle this setting to disable the bugfix for the gift box setting a tool's scrap value")));
+
         // Migrate old names to new names
         MigrateOldEntries(
-            ("Gift Box - Toggle", "Disable modded mechanics", giftboxMechanicsDisabled),
-
             ("Gift Box - Gift Box Value", "Chance for the gift box to receive scrap value addition (%)", giftboxValueAdditionChance),
             ("Gift Box - Gift Box Value", "Minimum gift box value addition", giftboxValueAdditionMin),
             ("Gift Box - Gift Box Value", "Maximum gift box value addition", giftboxValueAdditionMax),
@@ -235,7 +235,11 @@ public class Plugin : BaseUnityPlugin
 
             ("Gift Box - Store Item Selection", "Minimum selectable store item price", storeItemPriceMin),
             ("Gift Box - Store Item Selection", "Maximum selectable store item price", storeItemPriceMax),
-            ("Gift Box - Store Item Selection", "Store item price influence percentage (%)", storeItemPriceInfluence)
+            ("Gift Box - Store Item Selection", "Store item price influence percentage (%)", storeItemPriceInfluence),
+
+            ("Gift Box Behaviors", "Disable All Mod Mechanics", giftboxMechanicsDisabled),
+            ("Gift Box Behaviors", "Disable Gift Box Duplicate Sounds Bugfix", giftboxDupeSoundsBugFixDisabled),
+            ("Gift Box Behaviors", "Disable Gift Box Setting Tool Scrap Value Bugfix", giftboxToolScrapValueBugfixDisabled)
         );
 
         ValidateConfigAndApplyPatches();

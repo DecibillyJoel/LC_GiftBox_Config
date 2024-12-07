@@ -98,20 +98,18 @@ public static class ILPatterns
             return EmptiesStack(code.opcode);
         }
 
-        public static Func<CodeInstruction, int, bool> NextEmptyStack {
-            get
-            {
-                int stackSize = 0;
+        public static Func<CodeInstruction, int, bool> NextEmptyStack(int startSize = 0) 
+        {
+            int stackSize = startSize;
 
-                return (CodeInstruction code, int index) => {
-                    if (EmptiesStack(code)) return true;
+            return (CodeInstruction code, int index) => {
+                if (EmptiesStack(code)) return true;
 
-                    int delta = StackSizeDelta(code)
-                        ?? throw new ArgumentException($"[libs.ILPatterns.NextEmptyStack] Encountered uncountable instruction [{index}] {code}");
+                int delta = StackSizeDelta(code)
+                    ?? throw new ArgumentException($"[libs.ILPatterns.NextEmptyStack] Encountered uncountable instruction [{index}] {code}");
 
-                    return (stackSize += delta) == 0;
-                };
-            }
+                return (stackSize += delta) == 0;
+            };
         }
     #endregion
 }
