@@ -22,6 +22,7 @@
       Access private fields
     -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
 
     <!-- 
       You shouldn't have to change these, but you could if you wanted to.

@@ -20,43 +20,41 @@ using Object = UnityEngine.Object;
 using OpCode = System.Reflection.Emit.OpCode;
 using OpCodes = System.Reflection.Emit.OpCodes;
 using Random = System.Random;
-using System.Threading;
-using JetBrains.Annotations;
 
 namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 
 [StaticNetcode]
 [HarmonyPatch(typeof(GiftBoxItem))]
-internal static class GiftBoxItemPatch
+public static class GiftBoxItemPatch
 {
     #region GiftBox Item Reference
-        internal const int GIFTBOX_ITEM_ID = 152767;
-        internal static Item? _GIFTBOX_ITEM = null;
-        internal static Item? GIFTBOX_ITEM => _GIFTBOX_ITEM ??= StartOfRound.Instance?.allItemsList?.itemsList?.ToList()?.First(item => item.itemId == GIFTBOX_ITEM_ID);
+        public const int GIFTBOX_ITEM_ID = 152767;
+        public static Item? _GIFTBOX_ITEM = null;
+        public static Item? GIFTBOX_ITEM => _GIFTBOX_ITEM ??= StartOfRound.Instance?.allItemsList?.itemsList?.ToList()?.First(item => item.itemId == GIFTBOX_ITEM_ID);
     #endregion
 
     #region Easter Egg Resources
-        internal static GameObject? _EGGSPLOSION = null;
-        internal static GameObject EGGSPLOSION => _EGGSPLOSION ??= Resources.FindObjectsOfTypeAll<GameObject>().First(obj => obj.name == "EasterEggExplosionParticle");
-        internal static AudioClip? _EGGPOP = null;
-        internal static AudioClip? EGGPOP => _EGGPOP ??= Resources.FindObjectsOfTypeAll<AudioClip>().First(clip => clip.name == "EasterEggPop");
+        public static GameObject? _EGGSPLOSION = null;
+        public static GameObject EGGSPLOSION => _EGGSPLOSION ??= Resources.FindObjectsOfTypeAll<GameObject>().First(obj => obj.name == "EasterEggExplosionParticle");
+        public static AudioClip? _EGGPOP = null;
+        public static AudioClip? EGGPOP => _EGGPOP ??= Resources.FindObjectsOfTypeAll<AudioClip>().First(clip => clip.name == "EasterEggPop");
     #endregion
     
     #region GiftBox Behaviors
-        internal static List<int> giftboxBehaviors = [0, 0, 0, 0, 0];
-        internal const int DO_NOTHING = 0;
-        internal const int SPAWN_STORE_ITEM = 1;
-        internal const int SPAWN_SCRAP = 2;
-        internal const int SPAWN_GIFTBOX = 3;
-        internal const int SPAWN_NOTHING = 4;
+        public static List<int> giftboxBehaviors = [0, 0, 0, 0, 0];
+        public const int DO_NOTHING = 0;
+        public const int SPAWN_STORE_ITEM = 1;
+        public const int SPAWN_SCRAP = 2;
+        public const int SPAWN_GIFTBOX = 3;
+        public const int SPAWN_NOTHING = 4;
     #endregion
 
     #region Filtered Store Items
-        internal static Terminal? _terminal = null;
-        internal static Item[] _terminalBuyableItemsList = [];
-        internal static List<Item> _filteredStoreItems = [];
-        internal static List<double> _filteredStoreItemWeights = [];
-        internal static List<Item> filteredStoreItems {
+        public static Terminal? _terminal = null;
+        public static Item[] _terminalBuyableItemsList = [];
+        public static List<Item> _filteredStoreItems = [];
+        public static List<double> _filteredStoreItemWeights = [];
+        public static List<Item> filteredStoreItems {
             set {
                 if (value == null) {
                     _filteredStoreItems.Clear();
@@ -88,7 +86,7 @@ internal static class GiftBoxItemPatch
                 return _filteredStoreItems;
             }
         }
-        internal static List<double> filteredStoreItemWeights {
+        public static List<double> filteredStoreItemWeights {
             set {
                 if (value == null) {
                     _filteredStoreItemWeights.Clear();
@@ -112,10 +110,10 @@ internal static class GiftBoxItemPatch
     #endregion
 
     #region Filtered Scrap Items
-        internal static List<SpawnableItemWithRarity> _currentLevelSpawnableScrap = [];
-        internal static List<SpawnableItemWithRarity> _filteredScrapItems = [];
-        internal static List<double> _filteredScrapItemWeights = [];
-        internal static List<SpawnableItemWithRarity> filteredScrapItems
+        public static List<SpawnableItemWithRarity> _currentLevelSpawnableScrap = [];
+        public static List<SpawnableItemWithRarity> _filteredScrapItems = [];
+        public static List<double> _filteredScrapItemWeights = [];
+        public static List<SpawnableItemWithRarity> filteredScrapItems
         {
             set {
                 if (value == null) {
@@ -146,7 +144,7 @@ internal static class GiftBoxItemPatch
                 return _filteredScrapItems;
             }
         }
-        internal static List<double> filteredScrapItemWeights {
+        public static List<double> filteredScrapItemWeights {
             set {
                 if (value == null) {
                     _filteredScrapItemWeights.Clear();
@@ -170,40 +168,101 @@ internal static class GiftBoxItemPatch
         }
     #endregion
 
-    internal class GiftBoxModdedParams
+    public class GiftBoxModdedParams
     {
         [ES3Serializable]
-        internal bool CanEggsplode = false;
+        public bool CanEggsplode = false;
 
         [ES3Serializable]
-        internal bool ScrapHasGiftBoxValue = false;
+        public bool ScrapHasGiftBoxValue = false;
 
         [ES3Serializable]
-        internal int ScrapValue = 0;
+        public int ScrapValue = 0;
     }
 
     // TODO: SetScrapValue() before changing totalScrapValue in waitForGiftPresentToSpawnOnClient()
-    internal class GiftBoxModdedBehavior : MonoBehaviour 
+    public class GiftBoxModdedBehavior : MonoBehaviour 
     {
         public GiftBoxModdedParams Params;
-        internal GiftBoxModdedBehavior()
+        public GiftBoxModdedBehavior()
         {
             Params = new GiftBoxModdedParams();
         }
-        internal GiftBoxModdedBehavior(GiftBoxModdedParams _Params)
+        public GiftBoxModdedBehavior(GiftBoxModdedParams _Params)
         {
             Params = _Params;
         }
 
-        public static implicit operator GiftBoxModdedParams(GiftBoxModdedBehavior component) => component.Params;
+        public static implicit operator GiftBoxModdedParams?(GiftBoxModdedBehavior? component) => component?.Params;
+    }
+
+    [HarmonyPatch(nameof(GiftBoxItem.GetItemDataToSave))]
+    [HarmonyTranspiler]
+    internal static IEnumerable<CodeInstruction> GetItemDataToSave(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+        if (Plugin.giftboxMechanicsDisabled.Value)
+        {
+            return methodIL;
+        }
+
+        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
+
+        // GetItemDataToSave() destination: return 0;
+        stepper.GotoIndex(index: stepper.Instructions.Count);
+        stepper.GotoIL(code => code.LoadsConstant(0), reverse: true);
+
+        // GetItemDataToSave() overwrite: return int.MaxValue;
+        stepper.OverwriteIL(CodeInstructionPolyfills.LoadConstant(int.MaxValue));
+
+        return stepper.Instructions;
+    }
+
+    public static bool OverrideLoadItemSaveData(GiftBoxItem giftbox, int saveData)
+    {
+        GiftBoxModdedParams? moddedParams = giftbox.GetComponent<GiftBoxModdedBehavior>();
+        if (moddedParams == null) return false;
+
+        giftbox.objectInPresentItem = saveData == int.MaxValue ? null : StartOfRound.Instance?.allItemsList?.itemsList?.ElementAtOrDefault<Item?>(saveData);
+        giftbox.objectInPresent = giftbox.objectInPresentItem?.spawnPrefab;
+        giftbox.objectInPresentValue = moddedParams.ScrapValue;
+
+        giftbox.loadedItemFromSave = true;
+        return true;
+    }
+
+    [HarmonyPatch(nameof(GiftBoxItem.LoadItemSaveData))]
+    [HarmonyTranspiler]
+    public static IEnumerable<CodeInstruction> LoadItemSaveData(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+        if (Plugin.giftboxMechanicsDisabled.Value)
+        {
+            return methodIL;
+        }
+
+        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
+
+        // LoadItemSaveData() destination: base.LoadItemSaveData(saveData); ** **
+        stepper.GotoIL(code => code.Calls(type: typeof(GrabbableObject), name: "LoadItemSaveData"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Call GrabbableObject.LoadItemSaveData() not found!");
+        stepper.GotoIndex(offset: 1);
+
+        // LoadItemSaveData() insertion: ** if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } **
+        Label SkipEarlyReturnLabel = stepper.DeclareLabel();
+        stepper.InsertIL([
+            CodeInstructionPolyfills.LoadArgument(index: 0), // this
+            CodeInstructionPolyfills.LoadArgument(index: 1), // this, saveData
+            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(OverrideLoadItemSaveData)), // GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)
+            new CodeInstruction(OpCodes.Brfalse, SkipEarlyReturnLabel), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) {} else { undefined;}
+            new CodeInstruction(OpCodes.Ret), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } else { undefined;}
+            new CodeInstruction(OpCodes.Nop).WithLabels(SkipEarlyReturnLabel) // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; }
+        ]);
+
+        return stepper.Instructions;
     }
     
-    internal static bool InitGiftboxModdedBehavior(GiftBoxItem giftbox, Random giftboxBehaviorSeed, Random valueBehaviorSeed)
+    public static bool InitGiftboxModdedBehavior(GiftBoxItem giftbox, Random giftboxBehaviorSeed, Random valueBehaviorSeed)
     {
         int behaviorIndex = Probability.GetRandomWeightedIndex(giftboxBehaviors, giftboxBehaviorSeed);
         if (behaviorIndex == DO_NOTHING) return false; // Gift Box - Do Nothing
 
-        GiftBoxModdedParams moddedParams = giftbox.gameObject.AddComponent<GiftBoxModdedBehavior>();
+        GiftBoxModdedParams moddedParams = giftbox.gameObject.AddComponent<GiftBoxModdedBehavior>().Params;
         moddedParams.CanEggsplode = giftboxBehaviorSeed.Next(0, 100) < Plugin.giftboxEggsplosionChance.Value;
         
         switch (behaviorIndex) {
@@ -260,50 +319,9 @@ internal static class GiftBoxItemPatch
         return true;
     }
 
-    internal static bool OverrideLoadItemSaveData(GiftBoxItem giftbox, int saveData)
-    {
-        GiftBoxModdedParams? moddedParams = giftbox.GetComponent<GiftBoxModdedBehavior>();
-        if (moddedParams == null) return false;
-
-        giftbox.objectInPresentItem = StartOfRound.Instance?.allItemsList?.itemsList?.ElementAtOrDefault<Item?>(saveData);
-        giftbox.objectInPresent = giftbox.objectInPresentItem?.spawnPrefab;
-        giftbox.objectInPresentValue = moddedParams.ScrapValue;
-
-        giftbox.loadedItemFromSave = true;
-        return true;
-    }
-
-    [HarmonyPatch(nameof(GiftBoxItem.LoadItemSaveData))]
-    [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> LoadItemSaveData(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
-        if (Plugin.giftboxMechanicsDisabled.Value)
-        {
-            return methodIL;
-        }
-
-        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
-
-        // LoadItemSaveData() destination: base.LoadItemSaveData(saveData); ** **
-        stepper.GotoIL(code => code.Calls(type: typeof(GrabbableObject), name: "LoadItemSaveData"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Call GrabbableObject.LoadItemSaveData() not found!");
-        stepper.GotoIndex(offset: 1);
-
-        // LoadItemSaveData() insertion: ** if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } **
-        Label SkipEarlyReturnLabel = stepper.DeclareLabel();
-        stepper.InsertIL([
-            CodeInstructionPolyfills.LoadArgument(index: 0), // this
-            CodeInstructionPolyfills.LoadArgument(index: 1), // this, saveData
-            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(OverrideLoadItemSaveData)), // GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)
-            new CodeInstruction(OpCodes.Brfalse, SkipEarlyReturnLabel), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) {} else { undefined;}
-            new CodeInstruction(OpCodes.Ret), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } else { undefined;}
-            new CodeInstruction(OpCodes.Nop).WithLabels(SkipEarlyReturnLabel) // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; }
-        ]);
-
-        return stepper.Instructions;
-    }
-
     [HarmonyPatch(nameof(GiftBoxItem.Start))]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+    public static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
         {
             return methodIL;
@@ -337,7 +355,7 @@ internal static class GiftBoxItemPatch
         return stepper.Instructions;
     }
 
-    internal static void NestedGiftboxFun(GiftBoxItem giftbox, GrabbableObject? spawnedObj)
+    public static void NestedGiftboxFun(GiftBoxItem giftbox, GrabbableObject? spawnedObj)
     {
         if (spawnedObj == null || spawnedObj.itemProperties.itemId != GIFTBOX_ITEM_ID) return;
 
@@ -352,7 +370,7 @@ internal static class GiftBoxItemPatch
         } else Plugin.Log(LogLevel.Warning, "Failed to prepare nested giftbox scannode :(");
     }
 
-    internal static bool OverrideOpenGiftBox(GiftBoxItem giftbox)
+    public static bool OverrideOpenGiftBox(GiftBoxItem giftbox)
     {
         // this is no longer dumb
         GiftBoxModdedParams? moddedParams = giftbox.GetComponent<GiftBoxModdedBehavior>();
@@ -376,7 +394,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
     [HarmonyReversePatch]
-    internal static GrabbableObject? SpawnGiftItem(GiftBoxItem giftbox)
+    public static GrabbableObject? SpawnGiftItem(GiftBoxItem giftbox)
     {
         IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase)
         {
@@ -441,7 +459,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+    public static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
         {
             return methodIL;
@@ -468,10 +486,9 @@ internal static class GiftBoxItemPatch
     }
 
     [ClientRpc]
-    internal static void EggsplosionClientRpc(NetworkObjectReference giftboxNGO)
+    public static void EggsplosionClientRpc(NetworkObjectReference giftboxNGO)
     {
         GiftBoxItem? giftbox = ((GameObject)giftboxNGO)?.GetComponent<GiftBoxItem>();
-        Plugin.Log($"[{giftboxNGO}] -> {giftbox}");
         if (giftbox == null) return;
 
         if (EGGSPLOSION != null)
@@ -492,7 +509,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.waitForGiftPresentToSpawnOnClient), MethodType.Enumerator)]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+    public static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
         {
             return methodIL;
@@ -516,7 +533,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc_DuplicateSoundsBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+    public static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc_DuplicateSoundsBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxDupeSoundsBugFixDisabled.Value)
         {
             return methodIL;
@@ -536,7 +553,7 @@ internal static class GiftBoxItemPatch
 
     [HarmonyPatch(nameof(GiftBoxItem.waitForGiftPresentToSpawnOnClient), MethodType.Enumerator)]
     [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient_ToolBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
+    public static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient_ToolBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxToolScrapValueBugfixDisabled.Value)
         {
             return methodIL;
@@ -560,41 +577,6 @@ internal static class GiftBoxItemPatch
             ),
             new CodeInstruction(OpCodes.Nop).WithLabels(SkipScrapValueLabel) // if (component.itemProperties.isScrap) { doScrapThings(); }
         ]);
-
-        return stepper.Instructions;
-    }
-
-    [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.GetItemDataToSave))]
-    [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> peepee(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
-        if (Plugin.giftboxMechanicsDisabled.Value)
-        {
-            return methodIL;
-        }
-
-        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
-
-        stepper.InsertIL([
-            CodeInstructionPolyfills.LoadArgument(index: 0),
-            CodeInstructionPolyfills.CallClosure((GrabbableObject self) => Plugin.Log($"BASE.GETITEMDATATOSAVE({self})"))
-        ]);
-
-        return stepper.Instructions;
-    }
-
-    [HarmonyPatch(nameof(GiftBoxItem.GetItemDataToSave))]
-    [HarmonyTranspiler]
-    internal static IEnumerable<CodeInstruction> peepee2(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
-        if (Plugin.giftboxMechanicsDisabled.Value)
-        {
-            return methodIL;
-        }
-
-        ILStepper stepper = new(methodIL, methodGenerator, methodBase);
-
-        stepper.GotoIndex(index: stepper.Instructions.Count);
-        stepper.GotoIL(code => code.LoadsConstant(0), reverse: true);
-        stepper.OverwriteIL(CodeInstructionPolyfills.LoadConstant(-1));
 
         return stepper.Instructions;
     }

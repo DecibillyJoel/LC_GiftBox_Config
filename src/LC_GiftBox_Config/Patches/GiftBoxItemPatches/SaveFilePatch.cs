@@ -24,6 +24,7 @@ namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 using GiftBoxModdedParams = GiftBoxItemPatch.GiftBoxModdedParams;
 using GiftBoxModdedBehavior = GiftBoxItemPatch.GiftBoxModdedBehavior;
 
+[HarmonyPatch]
 internal static class SaveFilePatch
 {
     #region Savefile Keys
@@ -32,15 +33,19 @@ internal static class SaveFilePatch
     
     internal static Dictionary<int, GiftBoxModdedParams> GetGiftBoxModdedParamsDict()
     {
+        Plugin.Log($"ES3 Key exists: {ES3.KeyExists(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName)}");
         if (!ES3.KeyExists(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName)) return [];
 
+        ES3.Load<Dictionary<int, GiftBoxModdedParams>>(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName).Do(keypair => Plugin.Log($"\t{keypair.Key} {keypair.Value}"));
         return ES3.Load<Dictionary<int, GiftBoxModdedParams>>(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName);
     }
 
     internal static void LoadGiftBoxModdedParams(Dictionary<int, GiftBoxModdedParams> dict, int index, GrabbableObject grabbable)
     {
+        Plugin.Log($"Dict Key [{index}] exists: {dict.ContainsKey(index)}");
         if (!dict.ContainsKey(index)) return;
 
+        Plugin.Log($"\t[{index}] {dict[index]}");
         grabbable.gameObject.AddComponent<GiftBoxModdedBehavior>().Params = dict[index];
     }
 
@@ -81,11 +86,12 @@ internal static class SaveFilePatch
         return stepper.Instructions;
     }
 
-    internal static void SetGiftBoxModdedParamsInDict(Dictionary<int, GiftBoxModdedParams> dict, int index, GrabbableObject[] grabbables)
+    internal static void SetGiftBoxModdedParamsInDict(Dictionary<int, GiftBoxModdedParams> dict, int index, GrabbableObject grabbable)
     {
-        if (!grabbables[index].TryGetComponent(out GiftBoxModdedBehavior moddedBehavior)) return;
+        GiftBoxModdedParams? moddedParams = grabbable.GetComponent<GiftBoxModdedBehavior>();
+        if (moddedParams == null) return;
 
-        dict.Add(index, moddedBehavior.Params);
+        dict.Add(index, moddedParams);
     }
 
     internal static void SaveGiftBoxModdedParamsDict(Dictionary<int, GiftBoxModdedParams> dict)
@@ -111,7 +117,7 @@ internal static class SaveFilePatch
             CodeInstructionPolyfills.LoadString(GiftBoxModdedParamsSaveKey), // SaveFilePatch.GiftBoxModdedParamsSaveKey
             CodeInstructionPolyfills.LoadArgument(index: 0), // SaveFilePatch.GiftBoxModdedParamsSaveKey, this
             CodeInstructionPolyfills.LoadField(type: typeof(GameNetworkManager), name: "currentSaveFileName"), // SaveFilePatch.GiftBoxModdedParamsSaveKey, this.currentSaveFileName
-            CodeInstructionPolyfills.Call(type: typeof(ES3), name: nameof(ES3.DeleteKey)) // ES3.DeleteKey(SaveFilePatch.GiftBoxModdedParamsSaveKey, this.currentSaveFileName);
+            CodeInstructionPolyfills.Call(type: typeof(ES3), name: nameof(ES3.DeleteKey), parameters: [typeof(string), typeof(string)]) // ES3.DeleteKey(SaveFilePatch.GiftBoxModdedParamsSaveKey, this.currentSaveFileName);
         ]);
 
         // SaveItemsInShip() destination: List<int> list4 = new List<int>(); ** **
@@ -128,12 +134,17 @@ internal static class SaveFilePatch
         // SaveItemsInShip() destination: ** ** Debug.Log(string.Format("Saved data for item type: yadda yadda"));
         stepper.GotoIL(code => code.LoadsString("Saved data for item type: {0} - {1}"), errorMessage: "[Patches.GiftBoxItemPatches.SaveFilePatch.SaveItemsInShip] String \"Saved data for item type: {0} - {1}\" not found");
         
-        // SaveItemsInShip() insertion: SaveFilePatch.SetGiftBoxModdedParamsInDict(giftboxModdedParamsDict, num2, array);
+        // SaveItemsInShip() insertion: SaveFilePatch.SetGiftBoxModdedParamsInDict(giftboxModdedParamsDict, list.Count - 1, array[num2]);
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadLocal(GiftBoxModdedParamsDictLocal), // giftboxModdedParamsDict
-            CodeInstructionPolyfills.LoadLocal(index: 6), // giftboxModdedParamsDict, num2
-            CodeInstructionPolyfills.LoadLocal(index: 0), // giftboxModdedParamsDict, num2, array
-            CodeInstructionPolyfills.Call(type: typeof(SaveFilePatch), name: nameof(SetGiftBoxModdedParamsInDict)) // SaveFilePatch.SetGiftBoxModdedParamsInDict(giftboxModdedParamsDict, num2, array);
+            CodeInstructionPolyfills.LoadLocal(index: 1), // giftboxModdedParamsDict, list
+            CodeInstructionPolyfills.LoadProperty(type: typeof(List<int>), name: "Count"), // giftboxModdedParamsDict, list.Count
+            CodeInstructionPolyfills.LoadConstant(1), // giftboxModdedParamsDict, list.Count, 1
+            new CodeInstruction(OpCodes.Sub), // giftboxModdedParamsDict, list.Count - 1
+            CodeInstructionPolyfills.LoadLocal(index: 0), // giftboxModdedParamsDict, list.Count - 1, array
+            CodeInstructionPolyfills.LoadLocal(index: 6), // giftboxModdedParamsDict, list.Count - 1, array, num2
+            new CodeInstruction(OpCodes.Ldelem_Ref), // giftboxModdedParamsDict, list.Count - 1, array[num2]
+            CodeInstructionPolyfills.Call(type: typeof(SaveFilePatch), name: nameof(SetGiftBoxModdedParamsInDict)) // SaveFilePatch.SetGiftBoxModdedParamsInDict(giftboxModdedParamsDict, list.Count - 1, array[num2]);
         ]);
 
         // SaveItemsInShip() destination: ** ** ES3.Save<Vector3[]>("shipGrabbableItemPos", list2.ToArray(), this.currentSaveFileName);

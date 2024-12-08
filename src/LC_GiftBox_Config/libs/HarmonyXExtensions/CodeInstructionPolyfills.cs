@@ -628,4 +628,42 @@ public static class CodeInstructionPolyfills
         
         return property != null && StoresProperty(code, property);
     }
+
+    /// <summary>Creates a CodeInstruction loading a property (CALL)</summary>
+    /// <param name="property">The <see cref="PropertyInfo"/></param>
+    /// <returns>The HarmonyLib.CodeInstruction</returns>
+    public static CodeInstruction LoadProperty(PropertyInfo property)
+    {
+        return new CodeInstruction(OpCodes.Call, property.GetGetMethod(true));
+    }
+
+    /// <summary>Creates a CodeInstruction loading a property (CALL)</summary>
+    /// <param name="type">The <see cref="Type"/> to which the property belongs</param> 
+    /// <param name="name">The name of the <see cref="PropertyInfo"/></param>
+    /// <returns>The HarmonyLib.CodeInstruction</returns>
+    public static CodeInstruction LoadProperty(Type type, string name)
+    {
+        var property = AccessTools.Property(type, name) 
+            ?? throw new ArgumentException($"No property found for type={type}, name={name}");
+        return LoadProperty(property);
+    }
+
+    /// <summary>Creates a CodeInstruction setting a property (CALL)</summary>
+    /// <param name="property">The <see cref="PropertyInfo"/></param>
+    /// <returns>The HarmonyLib.CodeInstruction</returns>
+    public static CodeInstruction StoreProperty(PropertyInfo property)
+    {
+        return new CodeInstruction(OpCodes.Call, property.GetSetMethod(true));
+    }
+
+    /// <summary>Creates a CodeInstruction setting a property (CALL)</summary>
+    /// <param name="type">The <see cref="Type"/> to which the property belongs</param> 
+    /// <param name="name">The name of the <see cref="PropertyInfo"/></param>
+    /// <returns>The HarmonyLib.CodeInstruction</returns>
+    public static CodeInstruction StoreProperty(Type type, string name)
+    {
+        var property = AccessTools.Property(type, name) 
+            ?? throw new ArgumentException($"No property found for type={type}, name={name}");
+        return StoreProperty(property);
+    }
 }
