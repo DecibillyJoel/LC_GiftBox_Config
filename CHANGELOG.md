@@ -5,7 +5,7 @@
 - Added more detailed reasoning to credits section of readme  
 - Updated Eggsplosion logic to use RPC so it will not desync  
 - Improved compatibility with other mods (namely Scarlet Devil Mansion)  
-- Fixed gift boxes not correctly retained modded behavior when loading one from a save file  
+- Fixed gift boxes not correctly retaining modded behavior when loading one from a save file  
   
 ## v1.0.6  
   
