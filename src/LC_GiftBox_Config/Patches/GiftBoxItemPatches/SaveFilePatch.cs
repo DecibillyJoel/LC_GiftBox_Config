@@ -1,24 +1,11 @@
-using BepInEx;
-using UnityEngine;
-using Steamworks;
-using System;
 using HarmonyLib;
-using GameNetcodeStuff;
 using System.Collections.Generic;
-using System.Linq;
 using LC_GiftBox_Config.libs.ILStepper;
 using LC_GiftBox_Config.libs.HarmonyXExtensions;
 using System.Reflection;
 using System.Reflection.Emit;
-using Unity.Netcode;
-using Newtonsoft.Json.Serialization;
-using LC_GiftBox_Config.libs.Probability;
 
-using LogLevel = BepInEx.Logging.LogLevel;
-using Object = UnityEngine.Object;
-using OpCode = System.Reflection.Emit.OpCode;
 using OpCodes = System.Reflection.Emit.OpCodes;
-using Random = System.Random;
 
 namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 using GiftBoxModdedParams = GiftBoxItemPatch.GiftBoxModdedParams;
@@ -50,6 +37,7 @@ internal static class SaveFilePatch
     }
 
     [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.LoadShipGrabbableItems))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     internal static IEnumerable<CodeInstruction> LoadShipGrabbableItems(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -100,6 +88,7 @@ internal static class SaveFilePatch
     }
 
     [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.SaveItemsInShip))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     internal static IEnumerable<CodeInstruction> SaveItemsInShip(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)

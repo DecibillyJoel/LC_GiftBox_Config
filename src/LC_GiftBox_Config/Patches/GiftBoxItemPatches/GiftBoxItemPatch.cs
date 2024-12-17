@@ -1,10 +1,6 @@
-using BepInEx;
 using UnityEngine;
-using Steamworks;
 using System;
 using HarmonyLib;
-using HarmonyLib.Tools;
-using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,7 +13,6 @@ using LC_GiftBox_Config.libs.Probability;
 
 using LogLevel = BepInEx.Logging.LogLevel;
 using Object = UnityEngine.Object;
-using OpCode = System.Reflection.Emit.OpCode;
 using OpCodes = System.Reflection.Emit.OpCodes;
 using Random = System.Random;
 
@@ -30,7 +25,7 @@ public static class GiftBoxItemPatch
     #region GiftBox Item Reference
         public const int GIFTBOX_ITEM_ID = 152767;
         public static Item? _GIFTBOX_ITEM = null;
-        public static Item? GIFTBOX_ITEM => _GIFTBOX_ITEM ??= StartOfRound.Instance?.allItemsList?.itemsList?.ToList()?.First(item => item.itemId == GIFTBOX_ITEM_ID);
+        public static Item GIFTBOX_ITEM => _GIFTBOX_ITEM ??= StartOfRound.Instance.allItemsList.itemsList.ToList().First(item => item.itemId == GIFTBOX_ITEM_ID);
     #endregion
 
     #region Easter Egg Resources
@@ -47,6 +42,10 @@ public static class GiftBoxItemPatch
         public const int SPAWN_SCRAP = 2;
         public const int SPAWN_GIFTBOX = 3;
         public const int SPAWN_NOTHING = 4;
+    #endregion
+
+    #region Nested GiftBox
+        public static GiftBoxModdedParams? parentGiftboxParams = null;
     #endregion
 
     #region Filtered Store Items
@@ -123,9 +122,9 @@ public static class GiftBoxItemPatch
                 }
             }
             get {
-                if (_currentLevelSpawnableScrap != RoundManager.Instance?.currentLevel?.spawnableScrap)
+                if (_currentLevelSpawnableScrap != RoundManager.Instance.currentLevel.spawnableScrap)
                 {
-                    _currentLevelSpawnableScrap = RoundManager.Instance?.currentLevel?.spawnableScrap ?? [];
+                    _currentLevelSpawnableScrap = RoundManager.Instance.currentLevel.spawnableScrap;
                     _filteredScrapItems.Clear();
                     _filteredScrapItemWeights.Clear();
                 }
@@ -178,6 +177,9 @@ public static class GiftBoxItemPatch
 
         [ES3Serializable]
         public int ScrapValue = 0;
+
+        [ES3Serializable]
+        public int NestedScrapId = -1;
     }
 
     // TODO: SetScrapValue() before changing totalScrapValue in waitForGiftPresentToSpawnOnClient()
@@ -197,6 +199,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.GetItemDataToSave))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     internal static IEnumerable<CodeInstruction> GetItemDataToSave(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -221,7 +224,7 @@ public static class GiftBoxItemPatch
         GiftBoxModdedParams? moddedParams = giftbox.GetComponent<GiftBoxModdedBehavior>();
         if (moddedParams == null) return false;
 
-        giftbox.objectInPresentItem = saveData == int.MaxValue ? null : StartOfRound.Instance?.allItemsList?.itemsList?.ElementAtOrDefault<Item?>(saveData);
+        giftbox.objectInPresentItem = saveData == int.MaxValue ? null : StartOfRound.Instance.allItemsList.itemsList.ElementAtOrDefault(saveData);
         giftbox.objectInPresent = giftbox.objectInPresentItem?.spawnPrefab;
         giftbox.objectInPresentValue = moddedParams.ScrapValue;
 
@@ -230,6 +233,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.LoadItemSaveData))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> LoadItemSaveData(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -244,15 +248,17 @@ public static class GiftBoxItemPatch
         stepper.GotoIndex(offset: 1);
 
         // LoadItemSaveData() insertion: ** if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } **
-        Label SkipEarlyReturnLabel = stepper.DeclareLabel();
+        Label EarlyReturnLabel = stepper.DeclareLabel();
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.LoadArgument(index: 1), // this, saveData
             CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(OverrideLoadItemSaveData)), // GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)
-            new CodeInstruction(OpCodes.Brfalse, SkipEarlyReturnLabel), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) {} else { undefined;}
-            new CodeInstruction(OpCodes.Ret), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; } else { undefined;}
-            new CodeInstruction(OpCodes.Nop).WithLabels(SkipEarlyReturnLabel) // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; }
+            new CodeInstruction(OpCodes.Brtrue, EarlyReturnLabel), // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { undefined; }
         ]);
+        // LoadItemSaveData() destination: this.loadedItemFromSave = true; ** **
+        stepper.GotoIL(code => code.StoresField(type: typeof(GiftBoxItem), name: "loadedItemFromSave"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Store field GrabbableObject.loadedItemFromSave not found!");
+        stepper.GotoIndex(offset: 1);
+        stepper.InsertIL(new CodeInstruction(OpCodes.Nop).WithLabels(EarlyReturnLabel)); // if (GiftBoxItemPatch.OverrideLoadItemSaveData(this, saveData)) { return; }
 
         return stepper.Instructions;
     }
@@ -282,10 +288,23 @@ public static class GiftBoxItemPatch
                 giftbox.objectInPresentItem = giftbox.itemProperties;
                 giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
 
+                if (parentGiftboxParams != null)
+                {
+                    moddedParams.NestedScrapId = parentGiftboxParams.NestedScrapId;
+                } 
+                else 
+                {
+                    int nestedScrapIndex = Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
+                    Item? nestedScrapItem = filteredScrapItems.ElementAtOrDefault(nestedScrapIndex)?.spawnableItem;
+
+                    if (nestedScrapItem)
+                        moddedParams.NestedScrapId = StartOfRound.Instance.allItemsList.itemsList.FindIndex(item => item == nestedScrapItem);
+                }
+
                 goto case SPAWN_SCRAP;
             case SPAWN_SCRAP: // Gift Box - Spawn Scrap
                 if (behaviorIndex == SPAWN_SCRAP) {
-                    int scrapIndex = Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
+                    int scrapIndex = parentGiftboxParams?.NestedScrapId ?? Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
                     if (scrapIndex == -1) {
                         break;
                     }
@@ -320,6 +339,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.Start))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> Start(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -357,17 +377,24 @@ public static class GiftBoxItemPatch
 
     public static void NestedGiftboxFun(GiftBoxItem giftbox, GrabbableObject? spawnedObj)
     {
+        // Check if spawned object is nested giftbox
         if (spawnedObj == null || spawnedObj.itemProperties.itemId != GIFTBOX_ITEM_ID) return;
 
+        // Shrink and rename nested giftbox
         spawnedObj.transform.localScale = giftbox.transform.localScale * 0.925f;
         spawnedObj.name = "Nested " + giftbox.name;
 
+        // Modify nested giftbox scan node
         ScanNodeProperties giftboxNode = giftbox.GetComponentInChildren<ScanNodeProperties>();
         ScanNodeProperties spawnedObjNode = spawnedObj.GetComponentInChildren<ScanNodeProperties>();
         if (giftboxNode != null && spawnedObjNode != null)
         {
             spawnedObjNode.headerText = "Nested " + giftboxNode.headerText;
-        } else Plugin.Log(LogLevel.Warning, "Failed to prepare nested giftbox scannode :(");
+        } else Plugin.Log(LogLevel.Warning, "Failed to prepare nested giftbox scan node :(");
+
+        // Set 
+        GiftBoxModdedParams? moddedParams = spawnedObj.GetComponent<GiftBoxModdedBehavior>();
+        if (moddedParams == null) return;
     }
 
     public static bool OverrideOpenGiftBox(GiftBoxItem giftbox)
@@ -380,7 +407,9 @@ public static class GiftBoxItemPatch
         if (moddedParams.ScrapHasGiftBoxValue) giftbox.objectInPresentValue = giftbox.scrapValue;
 
         // Use reverse patched vanilla logic to spawn the item
+        parentGiftboxParams = moddedParams;
         GrabbableObject? spawnedObj = SpawnGiftItem(giftbox);
+        parentGiftboxParams = null;
 
         // Apply nested giftbox fun if applicable
         NestedGiftboxFun(giftbox, spawnedObj);
@@ -458,6 +487,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -467,20 +497,21 @@ public static class GiftBoxItemPatch
 
         ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
-        // OpenGiftBoxServerRpc() destination: { return; } ** ** GameObject gameObject = null;
+        // OpenGiftBoxServerRpc() destination: ** ** GameObject gameObject = null;
         stepper.GotoIL(code => code.StoresLocal(index: 0), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] Store Local 0 (gameObject) not found");
-        stepper.GotoIL(code => code.opcode == OpCodes.Ret, reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] OpCodes.Ret not found");
-        stepper.GotoIndex(offset: 1);
+        stepper.GotoIL(ILPatterns.NextEmptyStack(startSize: 0), offset: 1, reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] Beginning of Store Local 0 (gameObject) not found");
 
         // OpenGiftBoxServerRpc() insertion: ** if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; } **
-        Label SkipEarlyReturnLabel = stepper.DeclareLabel();
+        Label EarlyReturnLabel = stepper.DeclareLabel();
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(OverrideOpenGiftBox)), // GiftBoxItemPatch.OverrideOpenGiftBox(this)
-            new CodeInstruction(OpCodes.Brfalse, SkipEarlyReturnLabel), // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) {} else { undefined; }
-            new CodeInstruction(OpCodes.Ret), // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; } else { undefined; }
-            new CodeInstruction(OpCodes.Nop).WithLabels(SkipEarlyReturnLabel) // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; }
+            new CodeInstruction(OpCodes.Brtrue, EarlyReturnLabel), // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { undefined; }
         ]);
+        // OpenGiftBoxServerRpc() destination: this.OpenGiftBoxNoPresentClientRpc(); ** **
+        stepper.GotoIL(code => code.Calls(type: typeof(GiftBoxItem), name: "OpenGiftBoxNoPresentClientRpc"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc] Call GiftBoxItem.OpenGiftBoxNoPresentClientRpc not found!");
+        stepper.GotoIndex(offset: 1);
+        stepper.InsertIL(new CodeInstruction(OpCodes.Nop).WithLabels(EarlyReturnLabel)); // if (GiftBoxItemPatch.OverrideOpenGiftBox(this)) { return; })
 
         return stepper.Instructions;
     }
@@ -508,6 +539,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.waitForGiftPresentToSpawnOnClient), MethodType.Enumerator)]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxMechanicsDisabled.Value)
@@ -532,6 +564,7 @@ public static class GiftBoxItemPatch
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> OpenGiftBoxServerRpc_DuplicateSoundsBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxDupeSoundsBugFixDisabled.Value)
@@ -545,13 +578,18 @@ public static class GiftBoxItemPatch
         stepper.GotoIL(code => code.Calls(type: typeof(GiftBoxItem), name: "OpenGiftBoxClientRpc"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc_DuplicateSoundsBugfix] Call GiftBoxItem.OpenGiftBoxClientRpc not found!");
         stepper.GotoIndex(offset: 1);
 
-        // OpenGiftBoxServerRpc() insertion: ** return; **
-        stepper.InsertIL(new CodeInstruction(OpCodes.Ret), pinLabels: false, pinBlocks: false);
+        // OpenGiftBoxServerRpc() insertion: ** } else { **
+        Label SkipNoPresentRpcLabel = stepper.DeclareLabel();
+        stepper.InsertIL(new CodeInstruction(OpCodes.Br, SkipNoPresentRpcLabel), pinLabels: false, pinBlocks: false);
+        stepper.GotoIL(code => code.Calls(type: typeof(GiftBoxItem), name: "OpenGiftBoxNoPresentClientRpc"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.OpenGiftBoxServerRpc_DuplicateSoundsBugfix] Call GiftBoxItem.OpenGiftBoxNoPresentClientRpc not found!");
+        stepper.GotoIndex(offset: 1);
+        stepper.InsertIL(new CodeInstruction(OpCodes.Nop).WithLabels(SkipNoPresentRpcLabel));
 
         return stepper.Instructions;
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.waitForGiftPresentToSpawnOnClient), MethodType.Enumerator)]
+    [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]
     public static IEnumerable<CodeInstruction> waitForGiftPresentToSpawnOnClient_ToolBugfix(IEnumerable<CodeInstruction> methodIL, ILGenerator methodGenerator, MethodBase methodBase){
         if (Plugin.giftboxToolScrapValueBugfixDisabled.Value)

@@ -1,24 +1,14 @@
-using BepInEx;
-using UnityEngine;
-using Steamworks;
 using System;
 using HarmonyLib;
-using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Linq;
 using LC_GiftBox_Config.libs.ILStepper;
 using LC_GiftBox_Config.libs.HarmonyXExtensions;
 using System.Reflection;
 using System.Reflection.Emit;
-using Unity.Netcode;
-using LC_GiftBox_Config.libs.Probability;
 
 using LogLevel = BepInEx.Logging.LogLevel;
-using Object = UnityEngine.Object;
-using OpCode = System.Reflection.Emit.OpCode;
-using OpCodes = System.Reflection.Emit.OpCodes;
 using Random = System.Random;
-using Newtonsoft.Json.Serialization;
 
 namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 
@@ -29,7 +19,6 @@ internal static class RoundManagerPatch
     {
         // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
         if (spawnOneItemIndex != -1 && spawnableScrap[spawnOneItemIndex].spawnableItem.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
-        if (GiftBoxItemPatch.GIFTBOX_ITEM == null) return;
 
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
@@ -44,7 +33,10 @@ internal static class RoundManagerPatch
     {
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
-        for (int j = 0; j < weights.Length; j++) {
+        if (weights.Length != spawnableScrap.Count)
+            Plugin.Log(LogLevel.Error, "[LC_GiftBox_Config.Patches.RoundManagerPatch.AdjustGiftBoxSpawnWeight] weights length does not match spawnableScrap length! Wonkiness may occur!");
+
+        for (int j = 0; j < Math.Min(spawnableScrap.Count, weights.Length); j++) {
             if (spawnableScrap[j].spawnableItem.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) continue;
             
             // Gift Box Rarity Addition
@@ -131,11 +123,12 @@ internal static class RoundManagerPatch
             CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManagerPatch.AdjustGiftBoxSpawnWeight(this, weights, this.currentLevel.spawnableScrap)
         ]);
 
-        // SpawnScrapInLevel() destination: ** ** num4 += list[list.Count - 1];
+        // SpawnScrapInLevel() destination: ** ** num4 += list[list.Count - 1]; component.scrapValue = list[list.Count - 1];
         stepper.GotoIL(code => code.StoresField(type: typeof(GrabbableObject), name: "scrapValue"), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store field GrabbableObject.scrapValue not found");
+        stepper.GotoIL(code => code.StoresLocal(index: 4), reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store Local 4 (num4) not found");
         stepper.GotoIL(ILPatterns.NextEmptyStack(startSize: 0), offset: 1, reverse: true, errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Load Local 4 (num4) not found");
 
-        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AdjustGiftBoxValue(this, component, list); ** num4 += list[list.Count - 1];
+        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AdjustGiftBoxValue(this, component, list); ** num4 += list[list.Count - 1]; component.scrapValue = list[list.Count - 1];
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.LoadLocal(index: 18), // this, component

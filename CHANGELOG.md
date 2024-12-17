@@ -1,5 +1,10 @@
 # CHANGELOG  
   
+## v1.1.1  
+  
+- Improved mod compatibility by using branch instructions instead of return instructions, as to no longer prevent postfixes from running on modified methods  
+- Modified RoundManager patch behavior to result in a warning, rather than an ArgumentOutOfRangeException and a softlock, when another mod causes the RoundManager's spawnableScrap list to be mismatched with the scrap spawn weights array
+  
 ## v1.1.0  
   
 - Added more detailed reasoning to credits section of readme  

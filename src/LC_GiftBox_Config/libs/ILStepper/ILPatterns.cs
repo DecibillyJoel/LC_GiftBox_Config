@@ -1,5 +1,4 @@
 using HarmonyLib;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Linq;
 using System.Reflection;

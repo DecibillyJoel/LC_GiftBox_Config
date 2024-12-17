@@ -1,19 +1,12 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
-using UnityEngine;
-using Steamworks;
-using System;
 using HarmonyLib;
 
 using LC_GiftBox_Config.libs.LethalConfigNicerizer;
 using System.Collections.Generic;
 
 using LogLevel = BepInEx.Logging.LogLevel;
-using Object = UnityEngine.Object;
-using OpCode = System.Reflection.Emit.OpCode;
-using OpCodes = System.Reflection.Emit.OpCodes;
-using Random = System.Random;
 
 namespace LC_GiftBox_Config;
 
