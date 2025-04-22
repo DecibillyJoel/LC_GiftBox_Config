@@ -8,24 +8,24 @@
     />
   </ItemGroup>
 
-  <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile"
-      Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)LCMPluginInfo.cs">
+  <Target Name="AddGeneratedFile" BeforeTargets="AfterClean;BeforeBuild;BeforeRebuild;BeforeCompile;CoreCompile;BeforeResGen;BeforeResolveReference"
+      Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)BepPluginInfo.cs">
 
     <PropertyGroup>
-      <LCMPluginGuid Condition="'$(LCMPluginGuid)' == ''">$(AssemblyName)</LCMPluginGuid>
-      <LCMPluginName Condition="'$(LCMPluginName)' == ''">$(Product)</LCMPluginName>
-      <LCMPluginTsTeam Condition  ="'$(LCMPluginTsTeam)' == ''">$(TsTeam)</LCMPluginTsTeam>
-      <LCMPluginVersion Condition="'$(LCMPluginVersion)' == ''">$(Version)</LCMPluginVersion>
+      <BepPluginGuid Condition="'$(BepPluginGuid)' == ''">$(AssemblyName)</BepPluginGuid>
+      <BepPluginName Condition="'$(BepPluginName)' == ''">$(Product)</BepPluginName>
+      <BepPluginTsTeam Condition  ="'$(BepPluginTsTeam)' == ''">$(TsTeam)</BepPluginTsTeam>
+      <BepPluginVersion Condition="'$(BepPluginVersion)' == ''">$(Version)</BepPluginVersion>
       <GeneratedText><![CDATA[
-internal static class LCMPluginInfo
+internal static class BepPluginInfo
 {
-  public const string PLUGIN_GUID = "$(LCMPluginGuid)"%3B
-  public const string PLUGIN_NAME = "$(LCMPluginName)"%3B
-  public const string PLUGIN_TS_TEAM = "$(LCMPluginTsTeam)"%3B
-  public const string PLUGIN_VERSION = "$(LCMPluginVersion)"%3B
+  public const string PLUGIN_GUID = "$(BepPluginGuid)"%3B
+  public const string PLUGIN_NAME = "$(BepPluginName)"%3B
+  public const string PLUGIN_TS_TEAM = "$(BepPluginTsTeam)"%3B
+  public const string PLUGIN_VERSION = "$(BepPluginVersion)"%3B
 }
 ]]></GeneratedText>
-      <GeneratedFilePath>$(IntermediateOutputPath)LCMPluginInfo.cs</GeneratedFilePath>
+      <GeneratedFilePath>$(IntermediateOutputPath)BepPluginInfo.cs</GeneratedFilePath>
     </PropertyGroup>
 
     <ItemGroup>

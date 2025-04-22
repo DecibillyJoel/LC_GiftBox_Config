@@ -10,7 +10,7 @@ using LogLevel = BepInEx.Logging.LogLevel;
 
 namespace LC_GiftBox_Config;
 
-[BepInPlugin(LCMPluginInfo.PLUGIN_GUID, $"{LCMPluginInfo.PLUGIN_TS_TEAM}.{LCMPluginInfo.PLUGIN_NAME}", LCMPluginInfo.PLUGIN_VERSION)]
+[BepInPlugin(BepPluginInfo.PLUGIN_GUID, $"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}", BepPluginInfo.PLUGIN_VERSION)]
 [BepInDependency(StaticNetcodeLib.StaticNetcodeLib.Guid, BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency(LethalConfigNicerizer.LethalConfig_GUID, BepInDependency.DependencyFlags.SoftDependency)]
 
@@ -67,7 +67,7 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<int> storeItemPriceMax = null!;
     public static ConfigEntry<int> storeItemPriceInfluence = null!;
 
-    internal static readonly Harmony harmony = new($"{LCMPluginInfo.PLUGIN_TS_TEAM}.{LCMPluginInfo.PLUGIN_NAME}");
+    internal static readonly Harmony harmony = new($"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}");
 
     public static void Log(LogLevel logLevel, string logMessage)
     {
@@ -134,7 +134,7 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         PluginLogger = Logger;
-        Log($"[v{LCMPluginInfo.PLUGIN_VERSION}] Loading...");
+        Log($"[v{BepPluginInfo.PLUGIN_VERSION}] Loading...");
 
         spawnStoreItemChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Store Item Chance (Selection Weight)", 50, new ConfigDescription("The selection weight of a gift box containing a store item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 1000), [])));
         spawnScrapChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Scrap Item Chance (Selection Weight)", 30, new ConfigDescription("The selection weight of a gift box containing a scrap item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 100]", new AcceptableValueRange<int>(0, 1000), [])));
@@ -237,7 +237,7 @@ public class Plugin : BaseUnityPlugin
 
         ValidateConfigAndApplyPatches();
 
-        Log($"[v{LCMPluginInfo.PLUGIN_VERSION}] Finished loading!");
+        Log($"[v{BepPluginInfo.PLUGIN_VERSION}] Finished loading!");
     }
 
     private void MigrateOldEntries(params (string oldSection, string oldKey, ConfigEntryBase newEntry)[] migrations)

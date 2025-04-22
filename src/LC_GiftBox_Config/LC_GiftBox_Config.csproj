@@ -33,6 +33,29 @@
   </PropertyGroup>
 
   <!--
+      When adding additional references, ensure you use <Private>false</Private> to
+      ensure the DLL is explicitly NOT copied to the output directory. This is because
+      the DLLs are already included in the game and will be loaded from there.
+
+      Further, if the DLL is not included as part of the game, you should be using a
+      Dependency in your thunderstore.toml file to ensure the DLL is available to the
+      game when your mod is loaded.
+
+      Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
+    -->
+
+  <ItemGroup>
+    <PackageReference 
+      Include="Xilophor.StaticNetcodeLib" 
+      Version="1.1.1" 
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll" Publicize="true" Private="false" />
+  </ItemGroup>
+
+  <!--
     Don't mess with anything below this line, it is required to build via 
     github actions. If you are referencing other DLLs in your project than the
     base game or unity DLLs they will need to be available via NUGET or copied
@@ -55,27 +78,6 @@
       Include="LethalCompany.GameLibs.Steam"
       Version="62.0.0-ngd.0"
     />
-    <PackageReference 
-      Include="Xilophor.StaticNetcodeLib" 
-      Version="1.1.1" 
-    />
-
-    <!--
-      When adding additional references, ensure you use <Private>false</Private> to
-      ensure the DLL is explicitly NOT copied to the output directory. This is because
-      the DLLs are already included in the game and will be loaded from there.
-
-      Further, if the DLL is not included as part of the game, you should be using a
-      Dependency in your thunderstore.toml file to ensure the DLL is available to the
-      game when your mod is loaded.
-
-      Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
-    -->
   </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="LethalConfig" HintPath="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll" Publicize="true" Private="false" />
-  </ItemGroup>
-
 
 </Project>
