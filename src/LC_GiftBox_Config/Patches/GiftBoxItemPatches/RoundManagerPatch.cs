@@ -2,8 +2,8 @@ using System;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
-using LC_GiftBox_Config.libs.ILStepper;
-using LC_GiftBox_Config.libs.HarmonyXExtensions;
+using ILUtils;
+using ILUtils.HarmonyXtensions;
 using System.Reflection;
 using System.Reflection.Emit;
 

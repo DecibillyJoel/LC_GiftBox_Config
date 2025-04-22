@@ -227,3 +227,7 @@ artifacts/**/*.zip
 **/LethalConfig.zip
 **/LethalConfigPackage
 **/LethalConfigPackage/**
+**/ILUtils.dll
+**/ILUtils.zip
+**/LCUtils.dll
+**/LCUtils.zip

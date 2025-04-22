@@ -3,7 +3,7 @@ using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
 
-using LC_GiftBox_Config.libs.LethalConfigNicerizer;
+using LCUtils;
 using System.Collections.Generic;
 
 using LogLevel = BepInEx.Logging.LogLevel;
@@ -12,10 +12,16 @@ namespace LC_GiftBox_Config;
 
 [BepInPlugin(BepPluginInfo.PLUGIN_GUID, $"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}", BepPluginInfo.PLUGIN_VERSION)]
 [BepInDependency(StaticNetcodeLib.StaticNetcodeLib.Guid, BepInDependency.DependencyFlags.HardDependency)]
-[BepInDependency(LethalConfigNicerizer.LethalConfig_GUID, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(LCUtils.Plugin.PLUGIN_GUID, BepInDependency.DependencyFlags.HardDependency)]
+[BepInDependency(ILUtils.Plugin.PLUGIN_GUID, BepInDependency.DependencyFlags.HardDependency)]
 
 public class Plugin : BaseUnityPlugin
 {
+    public const string PLUGIN_GUID = BepPluginInfo.PLUGIN_GUID;
+    public const string PLUGIN_NAME = BepPluginInfo.PLUGIN_NAME;
+    public const string PLUGIN_VERSION = BepPluginInfo.PLUGIN_VERSION;
+    public const string PLUGIN_TS_TEAM = BepPluginInfo.PLUGIN_TS_TEAM;
+
     public static ManualLogSource PluginLogger = null!;
 
     public static ConfigEntry<bool> giftboxMechanicsDisabled = null!;

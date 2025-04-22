@@ -7,9 +7,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Unity.Netcode;
 using StaticNetcodeLib;
-using LC_GiftBox_Config.libs.ILStepper;
-using LC_GiftBox_Config.libs.HarmonyXExtensions;
-using LC_GiftBox_Config.libs.Probability;
+using ILUtils;
+using ILUtils.HarmonyXtensions;
+using LCUtils;
 
 using LogLevel = BepInEx.Logging.LogLevel;
 using Object = UnityEngine.Object;

@@ -8,7 +8,7 @@
     />
   </ItemGroup>
 
-  <Target Name="AddGeneratedFile" BeforeTargets="AfterClean;BeforeBuild;BeforeRebuild;BeforeCompile;CoreCompile;BeforeResGen;BeforeResolveReference"
+  <Target Name="AddGeneratedFile" BeforeTargets="AfterClean;BeforeBuild;BeforeCompile;CoreCompile;BeforeResolveReference"
       Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)BepPluginInfo.cs">
 
     <PropertyGroup>
@@ -38,38 +38,24 @@ internal static class BepPluginInfo
 
   </Target>
 
-  <Target Name="DownloadLethalConfig" Condition="!Exists('$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip')">
+  <Target Name="DownloadILUtils" Condition="!Exists('$(SolutionDir)/libs/ILUtils/ILUtils.dll')">
     <DownloadFile
-      SourceUrl="https://thunderstore.io/package/download/AinaVT/LethalConfig/1.4.3/"
-      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/"
-      DestinationFileName="LethalConfig.zip"
+      SourceUrl="https://github.com/DecibillyJoel/ILUtils/releases/latest/download/ILUtils.dll"
+      DestinationFolder="$(SolutionDir)/libs/ILUtils/"
+      DestinationFileName="ILUtils.dll"
     />
   </Target>
 
-  <Target Name="FetchLethalConfig" Condition="!Exists('$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.dll')">
-    <CallTarget Targets="DownloadLethalConfig;" />
-    <MakeDir
-      Directories="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
-    />
-    <Unzip
-      SourceFiles="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip"
-      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
-    />
-    <Move
-      SourceFiles="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage/plugins/LethalConfig/LethalConfig.dll"
-      DestinationFolder="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/"
-    />
-    <RemoveDir
-      Directories="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfigPackage"
-    />
-
-    <Delete
-      Files="$(MSBuildProjectDirectory)/libs/LethalConfigNicerizer/LethalConfig.zip"
+  <Target Name="DownloadLCUtils" Condition="!Exists('$(SolutionDir)/libs/LCUtils/LCUtils.dll')">
+    <DownloadFile
+      SourceUrl="https://github.com/DecibillyJoel/LCUtils/releases/latest/download/LCUtils.dll"
+      DestinationFolder="$(SolutionDir)/libs/LCUtils/"
+      DestinationFileName="LCUtils.dll"
     />
   </Target>
 
-  <Target Name="FetchNeededAssemblies" BeforeTargets="AfterClean;BeforeBuild;BeforeRebuild;BeforeCompile;CoreCompile;BeforeResGen;BeforeResolveReference">
-    <CallTarget Targets="FetchLethalConfig;" />
+  <Target Name="FetchNeededAssemblies" BeforeTargets="AfterClean;BeforeBuild;BeforeCompile;CoreCompile;BeforeResolveReference">
+    <CallTarget Targets="DownloadILUtils;DownloadLCUtils" />
   </Target>
 
 </Project>
