@@ -51,6 +51,7 @@ public static class GiftBoxItemPatch
     #region Filtered Store Items
         public static Terminal? _terminal = null;
         public static Item[] _terminalBuyableItemsList = [];
+        public static CompatibleNoun[] _terminalItemNouns = [];
         public static List<Item> _filteredStoreItems = [];
         public static List<double> _filteredStoreItemWeights = [];
         public static List<Item> filteredStoreItems {
@@ -66,20 +67,26 @@ public static class GiftBoxItemPatch
                 {
                     _terminal = Object.FindAnyObjectByType<Terminal>();
                     _terminalBuyableItemsList = [];
+                    _terminalItemNouns = [];
                 }
 
-                if (_terminalBuyableItemsList != _terminal?.buyableItemsList)
+                // this is stupid. help???
+                if (_terminalBuyableItemsList != _terminal?.buyableItemsList || _terminalItemNouns != _terminal?.terminalNodes?.allKeywords.FirstOrDefault(keyword => keyword.name == "Buy")?.compatibleNouns) 
                 {
                     _terminalBuyableItemsList = _terminal?.buyableItemsList ?? [];
+                    _terminalItemNouns = _terminal?.terminalNodes?.allKeywords.FirstOrDefault(keyword => keyword.name == "Buy")?.compatibleNouns ?? [];
                     _filteredStoreItems.Clear();
                 }
 
                 if (_filteredStoreItems.Count == 0) 
                 {
-                    _filteredStoreItems = _terminalBuyableItemsList.Where(item
+                    _filteredStoreItems = _terminalBuyableItemsList.Where((item, index)
                         => item.creditsWorth >= Plugin.storeItemPriceMin.Value
                         && item.creditsWorth <= Plugin.storeItemPriceMax.Value
+                        && (Plugin.storeItemMustBeBuyable.Value == false || _terminalItemNouns.Any(noun => noun.result.buyItemIndex == index))
                     ).ToList();
+
+                    Plugin.Log(LogLevel.Debug, $"Filtered Store Items: {string.Join(", ", _filteredStoreItems.Select(item => item.itemName))}");
                 }
 
                 return _filteredStoreItems;
@@ -263,77 +270,105 @@ public static class GiftBoxItemPatch
         return stepper.Instructions;
     }
     
-    public static bool InitGiftboxModdedBehavior(GiftBoxItem giftbox, Random giftboxBehaviorSeed, Random valueBehaviorSeed)
+    public static bool InitGiftboxModdedBehavior(GiftBoxItem giftbox, ref Random giftboxBehaviorSeed, ref Random valueSeed)
     {
-        int behaviorIndex = Probability.GetRandomWeightedIndex(giftboxBehaviors, giftboxBehaviorSeed);
+        // Determine first modded behavior to attempt
+        BlendedRandom giftboxBehaviorSeed2 = new(giftboxBehaviorSeed, null, Plugin.positionRNGInfluence.Value / 100.0);
+        int behaviorIndex = Probability.GetRandomWeightedIndex(giftboxBehaviors, giftboxBehaviorSeed2);
         if (behaviorIndex == DO_NOTHING) return false; // Gift Box - Do Nothing
 
+        // Overwrite giftbox random seeds with blended randomseeds
+        giftboxBehaviorSeed = giftboxBehaviorSeed2;
+        valueSeed = new BlendedRandom(valueSeed, null, Plugin.positionRNGInfluence.Value / 100.0);
+
+        // Create modded behavior component
         GiftBoxModdedParams moddedParams = giftbox.gameObject.AddComponent<GiftBoxModdedBehavior>().Params;
         moddedParams.CanEggsplode = giftboxBehaviorSeed.Next(0, 100) < Plugin.giftboxEggsplosionChance.Value;
+
+        // Remove DO_NOTHING from the list of behaviors to try
+        List<int> giftboxRemainingBehaviors = giftboxBehaviors.ToList();
+        giftboxRemainingBehaviors[DO_NOTHING] = 0;
         
-        switch (behaviorIndex) {
-            case SPAWN_NOTHING: // Gift Box - Spawn Nothing
-                break;
-            case SPAWN_STORE_ITEM: // Gift Box - Spawn Store Item
-                int itemIndex = Probability.GetRandomWeightedIndex(filteredStoreItemWeights, giftboxBehaviorSeed);
-                if (itemIndex == -1) {
-                    break;
-                }
+        // Keep trying until a behavior succeeds
+        while (giftboxRemainingBehaviors.Sum() > 0) {
+            switch (behaviorIndex) {
+                case SPAWN_NOTHING: // Gift Box - Spawn Nothing
+                    return true; 
+                case SPAWN_STORE_ITEM: // Gift Box - Spawn Store Item
+                    int storeItemIndex = Probability.GetRandomWeightedIndex(filteredStoreItemWeights, giftboxBehaviorSeed);
+                    Item? storeItem = filteredStoreItems.ElementAtOrDefault(storeItemIndex);
+                    
+                    if (storeItem == null) break;
 
-                giftbox.objectInPresentItem = filteredStoreItems[itemIndex];
-                giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
+                    giftbox.objectInPresentItem = storeItem;
+                    giftbox.objectInPresent = storeItem.spawnPrefab;
 
-                break;
-            case SPAWN_GIFTBOX: // Gift Box - Spawn Gift Box
-                giftbox.objectInPresentItem = giftbox.itemProperties;
-                giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
+                    return true;
+                case SPAWN_GIFTBOX: // Gift Box - Spawn Gift Box
+                    if (parentGiftboxParams != null) // Copy parent's nested scrap id
+                    {
+                        moddedParams.NestedScrapId = parentGiftboxParams.NestedScrapId;
+                    } 
+                    else // Randomly select a nested scrap id
+                    {
+                        int nestedScrapIndex = Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
+                        Item? nestedScrapItem = filteredScrapItems.ElementAtOrDefault(nestedScrapIndex)?.spawnableItem;
 
-                if (parentGiftboxParams != null)
-                {
-                    moddedParams.NestedScrapId = parentGiftboxParams.NestedScrapId;
-                } 
-                else 
-                {
-                    int nestedScrapIndex = Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
-                    Item? nestedScrapItem = filteredScrapItems.ElementAtOrDefault(nestedScrapIndex)?.spawnableItem;
-
-                    if (nestedScrapItem)
-                        moddedParams.NestedScrapId = StartOfRound.Instance.allItemsList.itemsList.FindIndex(item => item == nestedScrapItem);
-                }
-
-                goto case SPAWN_SCRAP;
-            case SPAWN_SCRAP: // Gift Box - Spawn Scrap
-                if (behaviorIndex == SPAWN_SCRAP) {
-                    int scrapIndex = parentGiftboxParams?.NestedScrapId ?? Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
-                    if (scrapIndex == -1) {
-                        break;
+                        if (nestedScrapItem != null)
+                            moddedParams.NestedScrapId = StartOfRound.Instance.allItemsList.itemsList.FindIndex(item => item == nestedScrapItem);
                     }
 
-                    giftbox.objectInPresentItem = filteredScrapItems[scrapIndex].spawnableItem;
-                    giftbox.objectInPresent = giftbox.objectInPresentItem.spawnPrefab;
-                }
+                    goto case SPAWN_SCRAP;
+                case SPAWN_SCRAP: // Gift Box - Spawn Scrap
+                    Item? scrap;
+                    if (behaviorIndex == SPAWN_GIFTBOX) // Spawn gift box
+                    {
+                        scrap = giftbox.itemProperties;
+                    }
+                    else if (parentGiftboxParams?.NestedScrapId != null) // Spawn parent's nested scrap item
+                    {
+                        scrap = StartOfRound.Instance.allItemsList.itemsList.ElementAtOrDefault(parentGiftboxParams.NestedScrapId);
+                    } 
+                    else // Spawn random scrap
+                    {
+                        int scrapIndex = parentGiftboxParams?.NestedScrapId ?? Probability.GetRandomWeightedIndex(filteredScrapItemWeights, giftboxBehaviorSeed);
+                        scrap = filteredScrapItems.ElementAtOrDefault(scrapIndex)?.spawnableItem;
+                    } 
+                        
+                    if (scrap == null) break;
 
-                giftbox.objectInPresentValue = valueBehaviorSeed.Next(giftbox.objectInPresentItem.minValue, giftbox.objectInPresentItem.maxValue);
+                    giftbox.objectInPresentItem = scrap;
+                    giftbox.objectInPresent = scrap.spawnPrefab;
 
-                // Gift Box - Scrap Value Addition
-                if (valueBehaviorSeed.Next(0, 100) < Plugin.scrapValueAdditionChance.Value)
-                    giftbox.objectInPresentValue += valueBehaviorSeed.Next(Plugin.scrapValueAdditionMin.Value, Plugin.scrapValueAdditionMax.Value + 1);
+                    // Max value is unreachable, but this is vanilla behavior soooooo...
+                    giftbox.objectInPresentValue = valueSeed.Next(giftbox.objectInPresentItem.minValue, giftbox.objectInPresentItem.maxValue);
 
-                // Gift Box - Scrap Value Multiplier
-                if (valueBehaviorSeed.Next(0, 100) < Plugin.scrapValueMultiplierChance.Value)
-                    giftbox.objectInPresentValue = (int)(giftbox.objectInPresentValue * (Plugin.scrapValueMultiplierMin.Value + (Plugin.scrapValueMultiplierMax.Value - Plugin.scrapValueMultiplierMin.Value) * valueBehaviorSeed.NextDouble()) / 100);
-                
-                // Gift Box - Inherit Gift Box Value (if host disables mod behaviors mid-round, above values will be used instead)
-                if (valueBehaviorSeed.Next(0, 100) < Plugin.scrapValueIsGiftBoxChance.Value)
-                    moddedParams.ScrapHasGiftBoxValue = true;
+                    // Apply RoundManager scrap value multiplier
+                    giftbox.objectInPresentValue = (int)(giftbox.objectInPresentValue * RoundManager.Instance.scrapValueMultiplier);
 
-                break;
-            default:
-                throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.InitGiftboxModdedBehavior] Giftbox Behavior selection failed! This should never happen!");
+                    // Gift Box - Scrap Value Addition
+                    if (valueSeed.Next(0, 100) < Plugin.scrapValueAdditionChance.Value)
+                        giftbox.objectInPresentValue += valueSeed.Next(Plugin.scrapValueAdditionMin.Value, Plugin.scrapValueAdditionMax.Value + 1);
+
+                    // Gift Box - Scrap Value Multiplier
+                    if (valueSeed.Next(0, 100) < Plugin.scrapValueMultiplierChance.Value)
+                        giftbox.objectInPresentValue = valueSeed.Next((giftbox.objectInPresentValue * Plugin.scrapValueMultiplierMin.Value + 50) / 100, (giftbox.objectInPresentValue * Plugin.scrapValueMultiplierMax.Value + 50) / 100 + 1);
+
+                    // Gift Box - Inherit Gift Box Value (if host disables mod behaviors mid-round, above values will be used instead)
+                    if (valueSeed.Next(0, 100) < Plugin.scrapValueIsGiftBoxChance.Value)
+                        moddedParams.ScrapHasGiftBoxValue = true;
+
+                    return true;
+                default:
+                    throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.InitGiftboxModdedBehavior] Giftbox Behavior selection failed due to invalid index! This should never happen!");
+            }
+
+            // Remove the behavior we just tried from the list of behaviors to try
+            giftboxRemainingBehaviors[behaviorIndex] = 0;
+
+            // Determine next modded behavior to attempt
+            behaviorIndex = Probability.GetRandomWeightedIndex(giftboxRemainingBehaviors, giftboxBehaviorSeed);
         }
-
-        // Ensure scrap value is saved to file
-        moddedParams.ScrapValue = giftbox.objectInPresentValue;
 
         return true;
     }
@@ -362,14 +397,14 @@ public static class GiftBoxItemPatch
         stepper.GotoIL(code => code.LoadsProperty(type: typeof(NetworkBehaviour), name: "IsServer"), errorMessage: "[Patches.GiftBoxItemPatches.GiftBoxItemPatch.Start] Property NetworkBehaviour.IsServer not found!");
         stepper.GotoIndex(offset: 1);
 
-        // Start() insertion: ** && !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, randomSeed, random) **
+        // Start() insertion: ** && !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, ref randomSeed, ref random) **
         stepper.InsertIL(codeRange: [
             CodeInstructionPolyfills.LoadArgument(0), // this
-            CodeInstructionPolyfills.LoadLocal(0), // this, randomSeed
-            CodeInstructionPolyfills.LoadLocal(1), // this, randomSeed, random
-            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(InitGiftboxModdedBehavior)), // GiftBoxItemPatch.InitGiftboxModdedBehavior(this, randomSeed, random)
-            new CodeInstruction(OpCodes.Not), // !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, randomSeed, random)
-            new CodeInstruction(OpCodes.And) // && !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, randomSeed, random)
+            CodeInstructionPolyfills.LoadLocal(0, useAddress: true), // this, ref randomSeed
+            CodeInstructionPolyfills.LoadLocal(1, useAddress: true), // this, ref randomSeed, ref random
+            CodeInstructionPolyfills.Call(type: typeof(GiftBoxItemPatch), name: nameof(InitGiftboxModdedBehavior)), // GiftBoxItemPatch.InitGiftboxModdedBehavior(this, ref randomSeed, ref random)
+            new CodeInstruction(OpCodes.Not), // !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, ref randomSeed, ref random)
+            new CodeInstruction(OpCodes.And) // && !GiftBoxItemPatch.InitGiftboxModdedBehavior(this, ref randomSeed, ref random)
         ]);
         
         return stepper.Instructions;
@@ -391,10 +426,6 @@ public static class GiftBoxItemPatch
         {
             spawnedObjNode.headerText = "Nested " + giftboxNode.headerText;
         } else Plugin.Log(LogLevel.Warning, "Failed to prepare nested giftbox scan node :(");
-
-        // Set 
-        GiftBoxModdedParams? moddedParams = spawnedObj.GetComponent<GiftBoxModdedBehavior>();
-        if (moddedParams == null) return;
     }
 
     public static bool OverrideOpenGiftBox(GiftBoxItem giftbox)

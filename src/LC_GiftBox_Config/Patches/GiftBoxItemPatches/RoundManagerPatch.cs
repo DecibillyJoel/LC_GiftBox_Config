@@ -48,7 +48,7 @@ internal static class RoundManagerPatch
             // Gift Box Rarity Multiplier
             if (AnomalyRandom.Next(0, 100) < Plugin.giftboxRarityMultiplierChance.Value)
             {
-                weights[j] = (int)(weights[j] * (Plugin.giftboxRarityMultiplierMin.Value + (Plugin.giftboxRarityMultiplierMax.Value - Plugin.giftboxRarityMultiplierMin.Value) * AnomalyRandom.NextDouble()) / 100);
+                weights[j] = AnomalyRandom.Next((weights[j] * Plugin.giftboxRarityMultiplierMin.Value + 50) / 100, (weights[j] * Plugin.giftboxRarityMultiplierMax.Value + 50) / 100 + 1);
             }
         }
     }
@@ -68,7 +68,7 @@ internal static class RoundManagerPatch
         // Gift Box Value Multiplier
         if (AnomalyRandom.Next(0, 100) < Plugin.giftboxValueMultiplierChance.Value)
         {
-            scrapValues[^1] = (int)(scrapValues[^1] * (Plugin.giftboxValueMultiplierMin.Value + (Plugin.giftboxValueMultiplierMax.Value - Plugin.giftboxValueMultiplierMin.Value) * AnomalyRandom.NextDouble()) / 100);
+            scrapValues[^1] = AnomalyRandom.Next((scrapValues[^1] * Plugin.giftboxValueMultiplierMin.Value + 50) / 100, (scrapValues[^1] * Plugin.giftboxValueMultiplierMax.Value + 50) / 100 + 1);
         }
     }
     

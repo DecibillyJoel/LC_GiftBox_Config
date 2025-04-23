@@ -21,6 +21,7 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Spawn Weight Minimum  
 * Spawn Weight Maximum  
 * Spawn Weight Influence (%)  
+* Spawn Weight Can Be Zero  
   
 ### Contained Store Item  
   
@@ -58,6 +59,7 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 ### Gift Box Behaviors  
   
 * Empty Gift Box Eggsplosion Chance (%)  
+* Position-Based Randomness Influence (%)  
   
 ### Compatibility / Debugging  
   

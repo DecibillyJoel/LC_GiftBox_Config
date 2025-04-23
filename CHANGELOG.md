@@ -1,5 +1,15 @@
 # CHANGELOG  
   
+## v1.2.0 
+  
+- Moved internal libraries into external utility packages  
+- Added "Spawn Weight Can Be Zero" config value that must be explicitly set to true for scrap items with 0 rarity to be selectable by the gift box  
+- Added "Must Be Buyable" config value that determines if store items must be accessible through the terminal to be selectable by the gift box
+- Added "Position-Based Randomness Influence (%)" config value that modifies the amount of influence the gift box's spawn position has on its randomness  
+- Improved gift box selection behavior to be more robust against incompatibilities / situations where scrap / item selection fails  
+- Fixed RoundManager's scrap value multiplier not being applied to scrap (lmao)  
+- Improved value/rarity multipliers logic to use rounding instead of truncating, and fixed maximum multiplier value being impossible
+  
 ## v1.1.1  
   
 - Improved mod compatibility by using branch instructions instead of return instructions, as to no longer prevent postfixes from running on modified methods  

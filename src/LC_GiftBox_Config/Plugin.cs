@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -27,7 +28,9 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<bool> giftboxMechanicsDisabled = null!;
     public static ConfigEntry<bool> giftboxDupeSoundsBugFixDisabled = null!;
     public static ConfigEntry<bool> giftboxToolScrapValueBugfixDisabled = null!;
+
     public static ConfigEntry<int> giftboxEggsplosionChance = null!;
+    public static ConfigEntry<int> positionRNGInfluence = null!;
 
     public static ConfigEntry<int> spawnStoreItemChance = null!;
     public static ConfigEntry<int> spawnScrapChance = null!;
@@ -35,12 +38,12 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<int> spawnNothingChance = null!;
     public static ConfigEntry<int> doNothingChance = null!;
 
-
     public static ConfigEntry<int> scrapValueMin = null!;
     public static ConfigEntry<int> scrapValueMax = null!;
     public static ConfigEntry<int> scrapValueInfluence = null!;
     public static ConfigEntry<int> scrapRarityMin = null!;
     public static ConfigEntry<int> scrapRarityMax = null!;
+    public static ConfigEntry<bool> scrapRarityCanBeZero = null!;
     public static ConfigEntry<int> scrapRarityInfluence = null!;
 
     public static ConfigEntry<int> scrapValueIsGiftBoxChance = null!;
@@ -72,6 +75,7 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<int> storeItemPriceMin = null!;
     public static ConfigEntry<int> storeItemPriceMax = null!;
     public static ConfigEntry<int> storeItemPriceInfluence = null!;
+    public static ConfigEntry<bool> storeItemMustBeBuyable = null!;
 
     internal static readonly Harmony harmony = new($"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}");
 
@@ -100,10 +104,7 @@ public class Plugin : BaseUnityPlugin
         Config.SettingChanged -= ScheduleValidateConfigAndApplyPatches;
 
         if (spawnStoreItemChance.Value == 0 && spawnScrapChance.Value == 0 && spawnGiftBoxChance.Value == 0 && spawnNothingChance.Value == 0 && doNothingChance.Value == 0) {
-            int maxChance = (doNothingChance.Description.AcceptableValues as AcceptableValueRange<int>)!.MaxValue;
-
-            Log(LogLevel.Error, $"All [{doNothingChance.Definition.Section}] config weights are 0! Setting |{doNothingChance.Definition.Key}| to {maxChance}...");
-            doNothingChance.Value = maxChance;
+            Log(LogLevel.Warning, $"All [{doNothingChance.Definition.Section}] config weights are 0! This will cause the gift box to always be unmodified! Please set at least one of the weights to a non-zero value!");
         }
 
 		ValidateMinMaxOrder(              scrapValueMin,  scrapValueMax);
@@ -116,6 +117,11 @@ public class Plugin : BaseUnityPlugin
 		ValidateMinMaxOrder(    giftboxValueAdditionMin,  giftboxValueAdditionMax);
 		ValidateMinMaxOrder(  giftboxValueMultiplierMin,  giftboxValueMultiplierMax);
 		ValidateMinMaxOrder(            giftboxSpawnMin,  giftboxSpawnMax);
+
+        if (scrapRarityCanBeZero.Value == false) {
+            scrapRarityMin.Value = Math.Max(scrapRarityMin.Value, 1);
+            scrapRarityMax.Value = Math.Max(scrapRarityMax.Value, 1);
+        }
         
         Config.SettingChanged += ScheduleValidateConfigAndApplyPatches;
 
@@ -123,7 +129,13 @@ public class Plugin : BaseUnityPlugin
         harmony.UnpatchSelf();
 
         Log(LogLevel.Debug, "Patching...");
-        harmony.PatchAll();
+        try{
+            harmony.PatchAll();
+        } catch (Exception e) {
+            Log(LogLevel.Error, $"Patching failed! Unpatching! Exception:\n{e}");
+            
+            harmony.UnpatchSelf();
+        }
 
         Log(LogLevel.Debug, "Finished config validation and patching!");
     }
@@ -151,13 +163,15 @@ public class Plugin : BaseUnityPlugin
         scrapValueMin = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Scrap Value Minimum", 0, new ConfigDescription("The minimum value required for a scrap item to be selected by the gift box    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         scrapValueMax = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Scrap Value Maximum", int.MaxValue, new ConfigDescription("The maximum value required for a scrap item to be selected by the gift box    \n    \n[Vanilla Value: infinity]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         scrapValueInfluence = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Scrap Value Influence (%)", -50, new ConfigDescription("How much influence a scrap item's value has over its selection weight.     \n0 = scrap item's value does not influence its selection weight    \nLarger influence percentage = high-value scrap items are more likely than low-value scrap items    \nNegative influence percentage = high-value scrap items are less likely than low-value scrap items    \n    \nEach selectable scrap item is given a selection weight equal to their scrap value raised to the power of this percentage (i.e. 100% = 100 / 10    \n0 = 1, so the exponent is 1). e.g. if this percentage is set to 200%, a scrap item with a value of 2 has a selection weight of 4 (2 ^ 200% = 2 ^ 2 = 4), which is four times the selection weight of a scrap item with a value of 1 and therefore a selection weight of 1 (1 ^ 200% = 1 ^ 2 = 1). If this value is negative, then the selection weights are inverted - e.g. -100% results in a scrap item with a value of 2 receiving a selection weight of 0.5 (2 ^ -100% = 2 ^ -1 = 1 / (2 ^ 1) = 1 / 2 = 0.5)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(-1000, 1000), [])));
-        scrapRarityMin = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Spawn Weight Minimum", 0, new ConfigDescription("The minimum spawn weight required for a scrap item to be selected by the gift box    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
+        scrapRarityMin = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Spawn Weight Minimum", 1, new ConfigDescription("The minimum spawn weight required for a scrap item to be selected by the gift box    \n    \n[Vanilla Value: 1]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         scrapRarityMax = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Spawn Weight Maximum", int.MaxValue, new ConfigDescription("The maximum value required for a scrap item to be selected by the gift box    \n    \n[Vanilla Value: infinity]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         scrapRarityInfluence = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Spawn Weight Influence (%)", 50, new ConfigDescription("How much influence a scrap item's spawn weight within the current level has over its selection weight.     \n0 = scrap item's spawn weight does not influence its selection weight    \nLarger influence percentage = common scrap items are more likely than rare scrap items    \nNegative influence percentage = common scrap items are less likely than rare scrap items    \n    \nEach selectable scrap item is given a selection weight equal to their spawn weight raised to the power of this percentage (i.e. 100% = 100 / 10    \n0 = 1, so the exponent is 1). e.g. if this percentage is set to 200%, a scrap item with a spawn weight of 2 has a selection weight of 4 (2 ^ 200% = 2 ^ 2 = 4), which is four times the selection weight of a scrap item with a spawn weight of 1 and therefore a selection weight of 1 (1 ^ 200% = 1 ^ 2 = 1). If this value is negative, then the selection weights are inverted - e.g. -100% results in a scrap item with a spawn weight of 2 receiving a selection weight of 0.5 (2 ^ -100% = 2 ^ -1 = 1 / (2 ^ 1) = 1 / 2 = 0.5)    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(-1000, 1000), [])));
+        scrapRarityCanBeZero = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Item", "Spawn Weight Can Be Zero", false, new ConfigDescription("If true, scrap items with a spawn weight of 0 will be selectable by the gift box, i.e. if its scrap value causes it to be selected. (If this is set to false, Spawn Weight Minimum and Maximum will be adjusted to be no less than 1)    \n    \n[Vanilla Value: false]")));
 
         storeItemPriceMin = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Store Item", "Price Minimum", 0, new ConfigDescription("The minimum store item price required for an item to be selected by the gift box    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         storeItemPriceMax = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Store Item", "Price Maximum", int.MaxValue, new ConfigDescription("The maximum store item price required for an item to be selected by the gift box    \n    \n[Vanilla Value: infinity]", new AcceptableValueRange<int>(0, int.MaxValue), [])));
         storeItemPriceInfluence = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Store Item", "Price Influence (%)", -100, new ConfigDescription("How much influence a store item's price has over its selection weight.     \n0 = store item's price does not influence its selection weight    \nLarger influence percentage = expensive store items are more likely than cheap store items    \nNegative influence percentage = expensive store items are less likely than cheap store items    \n    \nEach selectable store item is given a selection weight equal to their store price raised to the power of this percentage (i.e. 100% = 100 / 10    \n0 = 1, so the exponent is 1). e.g. if this percentage is set to 200%, a store item with a price of 2 has a selection weight of 4 (2 ^ 200% = 2 ^ 2 = 4), which is four times the selection weight of a store item with a price of 1 and therefore a selection weight of 1 (1 ^ 200% = 1 ^ 2 = 1). If this value is negative, then the selection weights are inverted - e.g. -100% results in a store item with a price of 2 receiving a selection weight of 0.5 (2 ^ -100% = 2 ^ -1 = 1 / (2 ^ 1) = 1 / 2 = 0.5)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(-1000, 1000), [])));
+        storeItemMustBeBuyable = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Store Item", "Must Be Buyable", true, new ConfigDescription("If true, only store items that are accessible through the terminal will be selectable by the gift box    \n    \n[Vanilla Value: N/A]")));
 
         scrapValueIsGiftBoxChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Value", "Inherit Gift Box Value Chance (%)", 15, new ConfigDescription("The likelihood (% chance) of the selected scrap item having the same scrap value as the gift box itself    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
         scrapValueAdditionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Scrap Value", "Addition Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of the selected scrap item receiving an addition to its scrap value (if the scrap item inherits the gift box's scrap value, this addition will not be applied)    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 100), [])));
@@ -186,6 +200,7 @@ public class Plugin : BaseUnityPlugin
         giftboxSpawnMax = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Spawn Anomaly", "Maximum Gift Boxes", 5, new ConfigDescription("The maximum possible number of gift boxes to be anomalously spawned    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 100), [])));
 
         giftboxEggsplosionChance = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Empty Gift Box Eggsplosion Chance (%)", 100, new ConfigDescription("The likelihood (% chance) of an empty gift box non-harmfully eggsploding (it won't harm you, but it may attract enemies who will)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), [])));
+        positionRNGInfluence = LethalConfigNicerizer.Nicerize(Config.Bind("Gift Box Behaviors", "Position-Based Randomness Influence (%)", 50, new ConfigDescription("How much influence position-based randomness has over all gift box randomness mechanics. Lowering this value increases the randomness felt between gift boxes in the same position; increasing this value decreases the randomness felt between gift boxes in the same position    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 100), [])));
 
         giftboxMechanicsDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Compatibility / Debugging", "Disable All Mod Mechanics", false, new ConfigDescription("WARNING: May cause unexpected game behaviors, desyncs, or loss / corruption of mod-related save data! Do not use this setting unless you know what you're doing!    \n    \nToggle this setting to disable the modded gift box mechanics")));
         giftboxDupeSoundsBugFixDisabled = LethalConfigNicerizer.Nicerize(Config.Bind("Compatibility / Debugging", "Disable Gift Box Duplicate Sounds Bugfix", false, new ConfigDescription("Toggle this setting to disable the gift box duplicate sounds bugfix")));
