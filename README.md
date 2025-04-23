@@ -28,6 +28,7 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Price Minimum  
 * Price Maximum  
 * Price Influence (%)  
+* Must Be Buyable  
   
 ### Contained Scrap Value  
   
