@@ -154,6 +154,8 @@ public static class GiftBoxItemPatch
     #region Cache Management
         public static void ClearItemCaches(List<SpawnableItemWithRarity>? spawnableScrap = null)
         {
+            Plugin.Log(LogLevel.Debug, "Clearing item caches");
+
             _storeItemsAndWeights = null;
             _scrapItemsAndWeights = null;
         }
@@ -177,8 +179,6 @@ public static class GiftBoxItemPatch
             {
                 // Update caches on selectablelevel change
                 ClearItemCaches();
-
-                Plugin.Log(LogLevel.Debug, "Clearing selectable level caches");
             }
         }
 
