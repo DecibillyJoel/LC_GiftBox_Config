@@ -8,6 +8,7 @@ using LCUtils;
 using System.Collections.Generic;
 
 using LogLevel = BepInEx.Logging.LogLevel;
+using System.Linq;
 
 namespace LC_GiftBox_Config;
 
@@ -27,6 +28,8 @@ public class Plugin : BaseUnityPlugin
 
     public const int GIFTBOX_ITEM_ID = 152767;
     public static Item GIFTBOX_ITEM {get; private set;} = null!;
+
+    public static List<ConfigFile> Configs = [];
 
     public static ConfigEntry<bool> giftboxMechanicsDisabled = null!;
     public static ConfigEntry<bool> giftboxDupeSoundsBugFixDisabled = null!;
@@ -96,6 +99,7 @@ public class Plugin : BaseUnityPlugin
     public static ConfigEntry<int> storeItemSpawn8ExtrasChance = null!;
     public struct PerItemConfig
     {
+        public ConfigFile ItemConfigFile;
         public ConfigEntry<bool> blacklisted;
         public ConfigEntry<int> selectionWeightMultiplierChance;
         public ConfigEntry<int> selectionWeightMultiplierMin;
@@ -145,7 +149,7 @@ public class Plugin : BaseUnityPlugin
         CancelInvoke(nameof(ValidateConfigAndApplyPatches));
 
         // Unsubscribe from the event so we don't trigger ourselves
-        Config.SettingChanged -= ScheduleValidateConfigAndApplyPatches;
+        Configs.Do(configFile => configFile.SettingChanged -= ScheduleValidateConfigAndApplyPatches);
 
         // Warn if all behavior weights are 0
         if (spawnStoreItemChance.Value == 0 && spawnScrapChance.Value == 0 && giftboxRecursionChance.Value == 0 && spawnNothingChance.Value == 0 && doNothingChance.Value == 0) {
@@ -176,9 +180,9 @@ public class Plugin : BaseUnityPlugin
             ValidateMinMaxOrder(   itemConfig.selectionWeightAdditionMin, itemConfig.selectionWeightAdditionMax);
         });
         
-        // Resubscribe and update the file
-        Config.SettingChanged += ScheduleValidateConfigAndApplyPatches;
-        Config.Save();
+        // Resubscribe and update the files
+        Configs.Do(configFile => configFile.SettingChanged += ScheduleValidateConfigAndApplyPatches);
+        Configs.Do(configFile => configFile.Save());
 
         // Harmony Repatch \\
 
@@ -215,22 +219,34 @@ public class Plugin : BaseUnityPlugin
         // Skip if config entry somehow already exists (this shouldn't happen)
         if (perItemConfigs.ContainsKey(item)) return;
 
+        // Create or get config file for item assembly
+        string configFilePath = Config.ConfigFilePath[..^4] + $".Items.{item.GetUserFriendlyAssemblyName()}.cfg";
+        ConfigFile itemConfigFile = Configs.FirstOrDefault(configFile => configFile.ConfigFilePath == configFilePath) ?? new ConfigFile(configFilePath, saveOnInit: true, ownerMetadata: Info.Metadata);
+
         // Create config entry for item
-        string sectionName = $"[{item.GetConfigName()}]";
+        string sectionName = $"{{{item.GetConfigName()}}}";
         perItemConfigs.Add(item, new(){
-            blacklisted = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Item Is Blacklisted", false, new ConfigDescription("If true, this item will not be selectable by the gift box    \n    \n[Vanilla Value: false]"))),
-            selectionWeightMultiplierChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Multiplier Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the selected item receiving a multiplier to its selection weight    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            selectionWeightMultiplierMin = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Multiplier Minimum (%)", 100, new ConfigDescription("The minimum possible value of the multiplier applied to the selected item's selection weight    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), []))),
-            selectionWeightMultiplierMax = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Multiplier Maximum (%)", 100, new ConfigDescription("The maximum possible value of the multiplier applied to the selected item's selection weight    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), []))),
-            selectionWeightAdditionChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Addition Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the selected item receiving an addition to its selection weight    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            selectionWeightAdditionMin = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Addition Minimum", 0, new ConfigDescription("The minimum possible value of the addition applied to the selected item's selection weight    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), []))),
-            selectionWeightAdditionMax = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Selection Weight Addition Maximum", 0, new ConfigDescription("The maximum possible value of the addition applied to the selected item's selection weight    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), []))),
-            spawn1ExtraChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Spawn 1 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning an extra instance of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            spawn2ExtraChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Spawn 2 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning two extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            spawn4ExtraChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Spawn 4 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning four extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            spawn8ExtraChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Spawn 8 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning eight extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
-            ignoreGlobalSpawnExtraChance = LethalConfigNicerizer.Nicerize(Config.Bind(sectionName, "Ignores Global Extra Spawn Chances", false, new ConfigDescription("If true, when this item is selected by a gift box, the gift box will ignore the global extra spawn chances and only roll the item-specific extra spawn chances    \n    \n[Vanilla Value: N/A]"))),
+            ItemConfigFile = itemConfigFile,
+            blacklisted = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Item Is Blacklisted", false, new ConfigDescription("If true, this item will not be selectable by the gift box    \n    \n[Vanilla Value: false]"))),
+            selectionWeightMultiplierChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Multiplier Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the selected item receiving a multiplier to its selection weight    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            selectionWeightMultiplierMin = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Multiplier Minimum (%)", 100, new ConfigDescription("The minimum possible value of the multiplier applied to the selected item's selection weight    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), []))),
+            selectionWeightMultiplierMax = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Multiplier Maximum (%)", 100, new ConfigDescription("The maximum possible value of the multiplier applied to the selected item's selection weight    \n    \n[Vanilla Value: 100%]", new AcceptableValueRange<int>(0, 1000), []))),
+            selectionWeightAdditionChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Addition Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the selected item receiving an addition to its selection weight    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            selectionWeightAdditionMin = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Addition Minimum", 0, new ConfigDescription("The minimum possible value of the addition applied to the selected item's selection weight    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), []))),
+            selectionWeightAdditionMax = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Selection Weight Addition Maximum", 0, new ConfigDescription("The maximum possible value of the addition applied to the selected item's selection weight    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(-1000, 1000), []))),
+            spawn1ExtraChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Spawn 1 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning an extra instance of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            spawn2ExtraChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Spawn 2 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning two extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            spawn4ExtraChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Spawn 4 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning four extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            spawn8ExtraChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Spawn 8 Extra Chance (%)", 0, new ConfigDescription("The likelihood (% chance) of the gift box spawning eight extra instances of the item. (Note: This effect can stack with the other effects that spawn extras)    \n    \n[Vanilla Value: 0%]", new AcceptableValueRange<int>(0, 100), []))),
+            ignoreGlobalSpawnExtraChance = LethalConfigNicerizer.Nicerize(itemConfigFile.Bind(sectionName, "Ignores Global Extra Spawn Chances", false, new ConfigDescription("If true, when this item is selected by a gift box, the gift box will ignore the global extra spawn chances and only roll the item-specific extra spawn chances    \n    \n[Vanilla Value: N/A]"))),
         });
+
+        // Ensure item config file is added to list of config files and file saving is handled manually
+        if (!Configs.Contains(itemConfigFile)) {
+            Configs.Add(itemConfigFile);
+            itemConfigFile.SaveOnConfigSet = false;
+            itemConfigFile.SettingChanged += ScheduleValidateConfigAndApplyPatches;
+        }
 
         ScheduleValidateConfigAndApplyPatches();
     }
@@ -242,6 +258,9 @@ public class Plugin : BaseUnityPlugin
 
         // Prevent config from auto-saving on every change. We will handle this ourselves
         Config.SaveOnConfigSet = false;
+
+        // Add global config file to list of ConfigFiles
+        Configs.Add(Config);
 
         spawnStoreItemChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Store Item Chance (Selection Weight)", 50, new ConfigDescription("The selection weight of a gift box containing a store item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 0]", new AcceptableValueRange<int>(0, 1000), [])));
         spawnScrapChance = LethalConfigNicerizer.Nicerize(Config.Bind("Contained Item Type", "Scrap Item Chance (Selection Weight)", 30, new ConfigDescription("The selection weight of a gift box containing a scrap item.     \n0 = will not happen    \nLarger selection weight = more likely to happen    \n    \n[Vanilla Value: 100]", new AcceptableValueRange<int>(0, 1000), [])));
