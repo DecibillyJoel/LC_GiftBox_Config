@@ -51,8 +51,8 @@ public static class GiftBoxItemPatch
 
             _storeItemsAndWeights = [];
 
-            Item[] buyableItemsList = HUDManager.Instance.terminalScript.buyableItemsList;
-            CompatibleNoun[] compatibleNouns = HUDManager.Instance.terminalScript.terminalNodes.allKeywords.FirstOrDefault(keyword => keyword.name == "Buy")?.compatibleNouns ?? [];
+            Item[] buyableItemsList = HUDManager.Instance?.terminalScript?.buyableItemsList ?? [];
+            CompatibleNoun[] compatibleNouns = HUDManager.Instance?.terminalScript?.terminalNodes?.allKeywords?.FirstOrDefault(keyword => keyword.name == "Buy")?.compatibleNouns ?? [];
             
             // Store all items in buyableItemsList that are not excluded via configs, and their weights
             buyableItemsList.Do(item => 
