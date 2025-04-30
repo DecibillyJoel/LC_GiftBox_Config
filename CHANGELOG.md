@@ -1,6 +1,13 @@
 # CHANGELOG  
   
-## v1.2.0 
+## v1.3.0  
+  
+- Added per-item settings, such as blacklist, selection weight multiplier and addition, and chance to spawn extra instances  
+- Multipliers are now applied before Additions rather than after. This makes it easier to override settings to a certain value by setting the multiplier to a guaranteed 0 and the addition to a guaranteed desired value  
+- Added chances for a gift box to spawn extra instances of its contained item per giftbox behavior  
+- Fixed bug where Price Influence (%) was not being used (wow)  
+  
+## v1.2.0  
   
 - Moved internal libraries into external utility packages  
 - Added "Spawn Weight Can Be Zero" config value that must be explicitly set to true for scrap items with 0 rarity to be selectable by the gift box  

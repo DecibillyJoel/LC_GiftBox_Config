@@ -54,7 +54,7 @@ internal static class BepPluginInfo
     />
   </Target>
 
-  <Target Name="FetchNeededAssemblies" BeforeTargets="AfterClean;BeforeBuild;BeforeCompile;CoreCompile;BeforeResolveReference">
+  <Target Name="FetchNeededAssemblies" AfterTargets="AfterClean;" BeforeTargets="BeforeBuild;BeforeRebuild;BeforeCompile;BeforeResolveReference;">
     <CallTarget Targets="DownloadILUtils;DownloadLCUtils" />
   </Target>
 

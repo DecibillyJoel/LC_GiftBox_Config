@@ -22,6 +22,10 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Spawn Weight Maximum  
 * Spawn Weight Influence (%)  
 * Spawn Weight Can Be Zero  
+* Spawn 1 Extra Chance (%)  
+* Spawn 2 Extra Chance (%)  
+* Spawn 4 Extra Chance (%)  
+* Spawn 8 Extra Chance (%)  
   
 ### Contained Store Item  
   
@@ -29,6 +33,18 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
 * Price Maximum  
 * Price Influence (%)  
 * Must Be Buyable  
+* Spawn 1 Extra Chance (%)  
+* Spawn 2 Extra Chance (%)  
+* Spawn 4 Extra Chance (%)  
+* Spawn 8 Extra Chance (%)  
+  
+### Contained Gift Box  
+  
+* Spawn 1 Extra Chance (%)  
+* Spawn 2 Extra Chance (%)  
+* Spawn 4 Extra Chance (%)  
+* Spawn 8 Extra Chance (%)  
+* Spawn 16 Extra Chance (%)  
   
 ### Contained Scrap Value  
   
@@ -61,6 +77,21 @@ Configure gift boxes / presents, such as having store items / scrap / another pr
   
 * Empty Gift Box Eggsplosion Chance (%)  
 * Position-Based Randomness Influence (%)  
+
+### [Per-Item Settings]  
+  
+* Item Is Blacklisted  
+* Selection Weight Multiplier Chance (%)  
+* Selection Weight Multiplier Minimum (%)  
+* Selection Weight Multiplier Maximum (%)  
+* Selection Weight Addition Chance (%)  
+* Selection Weight Addition Minimum (%)  
+* Selection Weight Addition Maximum (%)  
+* Spawn 1 Extra Chance (%)  
+* Spawn 2 Extra Chance (%)  
+* Spawn 4 Extra Chance (%)  
+* Spawn 8 Extra Chance (%)  
+* Ignores Global Extra Spawn Chance  
   
 ### Compatibility / Debugging  
   

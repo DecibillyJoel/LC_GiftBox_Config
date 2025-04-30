@@ -16,7 +16,7 @@
     <!--
       Except this, you should keep this up to date with your publishing tags.
     -->
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
 
     <!--
       Access private fields
@@ -55,7 +55,7 @@
     <PackageReference 
       Include="Xilophor.StaticNetcodeLib" 
       Version="1.1.1"
-      PrivateAssets="all" 
+      PrivateAssets="all"
     />
   </ItemGroup>
 
@@ -71,21 +71,25 @@
   <ItemGroup>
     <PackageReference 
       Include="BepInEx.AssemblyPublicizer.MSBuild" 
-      Version="0.4.2" 
+      Version="0.4.*" 
       PrivateAssets="all" 
+      IncludeAssets="all"
     />
     <PackageReference
       Include="BepInEx.Analyzers"
-      PrivateAssets="all"
       Version="1.*"
+      PrivateAssets="all" 
     />
     <PackageReference
       Include="BepInEx.Core"
       Version="5.4.*"
+      PrivateAssets="all" 
     />
     <PackageReference
       Include="LethalCompany.GameLibs.Steam"
-      Version="62.0.0-ngd.0"
+      Version="67.0.0-ngd.0"
+      Publicize="true"
+      PrivateAssets="all" 
     />
   </ItemGroup>
 

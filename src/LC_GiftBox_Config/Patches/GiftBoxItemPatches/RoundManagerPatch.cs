@@ -2,6 +2,7 @@ using System;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
+using LCUtils;
 using ILUtils;
 using ILUtils.HarmonyXtensions;
 using System.Reflection;
@@ -18,7 +19,7 @@ internal static class RoundManagerPatch
     internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex, List<SpawnableItemWithRarity> spawnableScrap)
     {
         // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
-        if (spawnOneItemIndex != -1 && spawnableScrap[spawnOneItemIndex].spawnableItem.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
+        if (spawnOneItemIndex != -1 && !spawnableScrap[spawnOneItemIndex].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
 
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
@@ -26,7 +27,7 @@ internal static class RoundManagerPatch
         if (AnomalyRandom.Next(0, 100) >= Plugin.giftboxSpawnChance.Value) return;
 
         int giftboxCount = AnomalyRandom.Next(Plugin.giftboxSpawnMin.Value, Plugin.giftboxSpawnMax.Value + 1);
-        ScrapToSpawn.AddRange(Enumerable.Repeat(GiftBoxItemPatch.GIFTBOX_ITEM, giftboxCount).ToList());
+        ScrapToSpawn.AddRange(Enumerable.Repeat(Plugin.GIFTBOX_ITEM, giftboxCount).ToList());
     }
 
     internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, int[] weights, List<SpawnableItemWithRarity> spawnableScrap)
@@ -37,39 +38,31 @@ internal static class RoundManagerPatch
             Plugin.Log(LogLevel.Error, "[LC_GiftBox_Config.Patches.RoundManagerPatch.AdjustGiftBoxSpawnWeight] weights length does not match spawnableScrap length! Wonkiness may occur!");
 
         for (int j = 0; j < Math.Min(spawnableScrap.Count, weights.Length); j++) {
-            if (spawnableScrap[j].spawnableItem.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) continue;
-            
-            // Gift Box Rarity Addition
-            if (AnomalyRandom.Next(0, 100) < Plugin.giftboxRarityAdditionChance.Value)
-            {
-                weights[j] += AnomalyRandom.Next(Plugin.giftboxRarityAdditionMin.Value, Plugin.giftboxRarityAdditionMax.Value + 1);
-            }
+            if (!spawnableScrap[j].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) continue;
 
             // Gift Box Rarity Multiplier
             if (AnomalyRandom.Next(0, 100) < Plugin.giftboxRarityMultiplierChance.Value)
-            {
                 weights[j] = AnomalyRandom.Next((weights[j] * Plugin.giftboxRarityMultiplierMin.Value + 50) / 100, (weights[j] * Plugin.giftboxRarityMultiplierMax.Value + 50) / 100 + 1);
-            }
+        
+            // Gift Box Rarity Addition
+            if (AnomalyRandom.Next(0, 100) < Plugin.giftboxRarityAdditionChance.Value)
+                weights[j] += AnomalyRandom.Next(Plugin.giftboxRarityAdditionMin.Value, Plugin.giftboxRarityAdditionMax.Value + 1);
         }
     }
 
     internal static void AdjustGiftBoxValue(RoundManager roundmanager, GrabbableObject component, List<int> scrapValues)
     {
-        if (component.itemProperties.itemId != GiftBoxItemPatch.GIFTBOX_ITEM_ID) return;
+        if (!component.itemProperties.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
 
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
-        // Gift Box Value Addition
-        if (AnomalyRandom.Next(0, 100) < Plugin.giftboxValueAdditionChance.Value)
-        {
-            scrapValues[^1] += AnomalyRandom.Next(Plugin.giftboxValueAdditionMin.Value, Plugin.giftboxValueAdditionMax.Value + 1);
-        }
-
         // Gift Box Value Multiplier
         if (AnomalyRandom.Next(0, 100) < Plugin.giftboxValueMultiplierChance.Value)
-        {
             scrapValues[^1] = AnomalyRandom.Next((scrapValues[^1] * Plugin.giftboxValueMultiplierMin.Value + 50) / 100, (scrapValues[^1] * Plugin.giftboxValueMultiplierMax.Value + 50) / 100 + 1);
-        }
+    
+        // Gift Box Value Addition
+        if (AnomalyRandom.Next(0, 100) < Plugin.giftboxValueAdditionChance.Value)
+            scrapValues[^1] += AnomalyRandom.Next(Plugin.giftboxValueAdditionMin.Value, Plugin.giftboxValueAdditionMax.Value + 1);
     }
     
     [HarmonyPatch(nameof(RoundManager.SpawnScrapInLevel))]
