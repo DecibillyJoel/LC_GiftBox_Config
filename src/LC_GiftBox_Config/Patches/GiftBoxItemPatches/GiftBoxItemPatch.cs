@@ -108,7 +108,7 @@ public static class GiftBoxItemPatch
 
             _scrapItemsAndWeights = [];
             double scrapValueMultiplier = RoundManager.Instance?.scrapValueMultiplier ?? 0.4;
-            Dictionary<Item, double> scrapRarities = RoundManager.Instance?.currentLevel?.spawnableScrap?.ToDictionary(item => item.spawnableItem, item => (double)item.rarity) ?? [];
+            Dictionary<Item, double> scrapRarities = SpawnableScrapUtils.GetSpawnableScrapSafely().ToDictionary(item => item.spawnableItem, item => (double)item.rarity);
 
             // Store all scrap items that are not excluded via configs, and their weights
             ItemUtils.AllItems.Do(item => 
@@ -151,6 +151,35 @@ public static class GiftBoxItemPatch
             );
         }
     #endregion
+
+    // Update caches on selectablelevel change
+    [HarmonyPatch] // at least one Harmony annotation makes Harmony not skip this patch class when calling PatchAll()
+    public static class SelectableLevelUpdatedPatch
+    {
+        // here, inside the patch class, you can place the auxiliary patch methods
+        // for example TargetMethod:
+
+        [HarmonyTargetMethods]
+        public static IEnumerable<MethodBase> TargetMethods()
+        {
+            return [
+                AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.GenerateNewLevelClientRpc)),
+                AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.LoadNewLevel)),
+                AccessTools.Method(type: typeof(StartOfRound), name: nameof(StartOfRound.ChangeLevel))
+            ];
+        }
+
+        [HarmonyPriority(priority: int.MaxValue)]
+        [HarmonyPrefix]
+        public static void SelectableLevelUpdate_Prefix()
+        {
+            Plugin.Log(LogLevel.Debug, "Clearing selectable level caches");
+            
+            // Clear caches on selectable level change
+            _storeItemsAndWeights = null;
+            _scrapItemsAndWeights = null;
+        }
+    }
 
     public class GiftBoxModdedParams
     {

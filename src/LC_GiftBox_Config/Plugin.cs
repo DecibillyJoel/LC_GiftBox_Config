@@ -216,6 +216,12 @@ public class Plugin : BaseUnityPlugin
             return;
         }
 
+        // Skip if missing spawnPrefab or GrabbableObject
+        if (item.spawnPrefab?.GetComponent<GrabbableObject>() == null) {
+            Log(LogLevel.Debug, $"Skipping registration of item [{item.GetConfigName()}] due to missing a spawnPrefab or GrabbableObject component!");
+            return;
+        }
+
         // Skip if config entry somehow already exists (this shouldn't happen)
         if (perItemConfigs.ContainsKey(item)) return;
 

@@ -16,8 +16,10 @@ namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 [HarmonyPatch(typeof(RoundManager))]
 internal static class RoundManagerPatch
 {
-    internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex, List<SpawnableItemWithRarity> spawnableScrap)
+    internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex)
     {
+        List<SpawnableItemWithRarity> spawnableScrap = SpawnableScrapUtils.GetSpawnableScrapSafely();
+
         // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
         if (spawnOneItemIndex != -1 && !spawnableScrap[spawnOneItemIndex].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
 
@@ -30,8 +32,9 @@ internal static class RoundManagerPatch
         ScrapToSpawn.AddRange(Enumerable.Repeat(Plugin.GIFTBOX_ITEM, giftboxCount).ToList());
     }
 
-    internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, int[] weights, List<SpawnableItemWithRarity> spawnableScrap)
+    internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, int[] weights)
     {
+        List<SpawnableItemWithRarity> spawnableScrap = SpawnableScrapUtils.GetSpawnableScrapSafely();
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
         if (weights.Length != spawnableScrap.Count)
@@ -76,44 +79,28 @@ internal static class RoundManagerPatch
 
         ILStepper stepper = new(methodIL, methodGenerator, methodBase);
 
-        // SDM / scrap injection compat (find what list is being used as spawnable scrap)
-        stepper.GotoIL((code, index) => code.StoresLocal(index: 15) && index > 0 && stepper.Instructions[index - 1].LoadsConstant(0), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] For loop initialization (int j = 0;) not found");
-        stepper.GotoIL(code => code.opcode.FlowControl == FlowControl.Branch, errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] For loop branch to control statement (j < this.currentLevel.spawnableScrap.Count;) not found");
-        stepper.GotoIL(code => code.labels.Contains((Label)stepper.CurrentOperand!), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] For loop control statement (j < this.currentLevel.spawnableScrap.Count;) not found");
-        stepper.GotoIL(code => code.LoadsProperty(type: typeof(List<SpawnableItemWithRarity>), name: "Count"), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Load Property List.Count (this.currentLevel.spawnableScrap.Count) not found");
-
-        List<CodeInstruction> SpawnableScrapIL = stepper.GetIL(
-            startIndex: stepper.FindIL(ILPatterns.NextEmptyStack(startSize: -1), reverse: true,  errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Spawnable Scrap List (this.currentLevel.spawnableScrap) not found)")
-        )
-        .Select(code => code.Clone()).ToList();
-
-        // Reset stepper position
-        stepper.GotoIndex(index: 0);
-
         // SpawnScrapInLevel() destination: compilerClosureObj.ScrapToSpawn = new List<Item>(); ** **
         stepper.GotoIL(code => code.StoresField(type: stepper.GetLocal(0).LocalType, name: "ScrapToSpawn"), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store Field compilerClosureObj.ScrapToSpawn not found");
         stepper.GotoIndex(offset: 1);
 
-        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3, this.currentLevel.spawnableScrap); **
+        // SpawnScrapInLevel() insertion: ** RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3); **
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.LoadLocal(index: 0), // this, compilerClosureObj
             CodeInstructionPolyfills.LoadField(type: stepper.GetLocal(0).LocalType, name: "ScrapToSpawn"), // this, compilerClosureObj.ScrapToSpawn
             CodeInstructionPolyfills.LoadLocal(index: 2), // this, compilerClosureObj.ScrapToSpawn, num3
-            ..SpawnableScrapIL, // this, compilerClosureObj.ScrapToSpawn, num3, this.currentLevel.spawnableScrap
-            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AnomalouslySpawnGiftBoxes)) // RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3, this.currentLevel.spawnableScrap);
+            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AnomalouslySpawnGiftBoxes)) // RoundManagerPatch.AnomalouslySpawnGiftBoxes(this, compilerClosureObj.ScrapToSpawn, num3);
         ]);
         
         // SpawnScrapInLevel() destination: int[] weights = list2.ToArray(); ** **
         stepper.GotoIL(code => code.StoresLocal(index: 6), errorMessage: "[Patches.GiftBoxItemPatches.RoundManagerPatch.SpawnScrapInLevel] Store Local 6 (weights) not found");
         stepper.GotoIndex(offset: 1);
 
-        // SpawnScrapInLevel() insertion: RoundManagerPatch.AdjustGiftBoxSpawnWeight(this, weights, this.currentLevel.spawnableScrap);
+        // SpawnScrapInLevel() insertion: RoundManagerPatch.AdjustGiftBoxSpawnWeight(this, weights);
         stepper.InsertIL([
             CodeInstructionPolyfills.LoadArgument(index: 0), // this
             CodeInstructionPolyfills.LoadLocal(index: 6), // this, weights
-            ..SpawnableScrapIL, // this, weights, this.currentLevel.spawnableScrap
-            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManagerPatch.AdjustGiftBoxSpawnWeight(this, weights, this.currentLevel.spawnableScrap)
+            CodeInstructionPolyfills.Call(type: typeof(RoundManagerPatch), name: nameof(AdjustGiftBoxSpawnWeight)) // RoundManagerPatch.AdjustGiftBoxSpawnWeight(this, weights)
         ]);
 
         // SpawnScrapInLevel() destination: ** ** num4 += list[list.Count - 1]; component.scrapValue = list[list.Count - 1];
