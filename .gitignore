@@ -223,4 +223,7 @@ node_modules/
 # End of https://www.toptal.com/developers/gitignore/api/csharp
 artifacts/*/dist/**/*
 artifacts/**/*.zip
+libs/*.dll
+libs/*.zip
 libs/**/*.dll
+libs/**/*.zip
