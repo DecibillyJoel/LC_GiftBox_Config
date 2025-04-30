@@ -223,11 +223,4 @@ node_modules/
 # End of https://www.toptal.com/developers/gitignore/api/csharp
 artifacts/*/dist/**/*
 artifacts/**/*.zip
-**/LethalConfig.dll
-**/LethalConfig.zip
-**/LethalConfigPackage
-**/LethalConfigPackage/**
-**/ILUtils.dll
-**/ILUtils.zip
-**/LCUtils.dll
-**/LCUtils.zip
+libs/**/*.dll

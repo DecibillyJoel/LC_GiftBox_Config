@@ -98,7 +98,6 @@ public static class GiftBoxItemPatch
         }
     #endregion
 
-    // TODO: Dynamically extract spawnableScrap from RoundManagerPatch
     #region Scrap Items and Weights
         private static Dictionary<Item, double>? _scrapItemsAndWeights;
         
@@ -108,7 +107,7 @@ public static class GiftBoxItemPatch
 
             _scrapItemsAndWeights = [];
             double scrapValueMultiplier = RoundManager.Instance?.scrapValueMultiplier ?? 0.4;
-            Dictionary<Item, double> scrapRarities = SpawnableScrapUtils.GetSpawnableScrapSafely().ToDictionary(item => item.spawnableItem, item => (double)item.rarity);
+            Dictionary<Item, double> scrapRarities = SpawnableScrapUtils.SpawnableScrap.ToDictionary(item => item.spawnableItem, item => (double)item.rarity);
 
             // Store all scrap items that are not excluded via configs, and their weights
             ItemUtils.AllItems.Do(item => 
@@ -152,34 +151,43 @@ public static class GiftBoxItemPatch
         }
     #endregion
 
-    // Update caches on selectablelevel change
-    [HarmonyPatch] // at least one Harmony annotation makes Harmony not skip this patch class when calling PatchAll()
-    public static class SelectableLevelUpdatedPatch
-    {
-        // here, inside the patch class, you can place the auxiliary patch methods
-        // for example TargetMethod:
-
-        [HarmonyTargetMethods]
-        public static IEnumerable<MethodBase> TargetMethods()
+    #region Cache Management
+        public static void ClearItemCaches(List<SpawnableItemWithRarity>? spawnableScrap = null)
         {
-            return [
-                AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.GenerateNewLevelClientRpc)),
-                AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.LoadNewLevel)),
-                AccessTools.Method(type: typeof(StartOfRound), name: nameof(StartOfRound.ChangeLevel))
-            ];
-        }
-
-        [HarmonyPriority(priority: int.MaxValue)]
-        [HarmonyPrefix]
-        public static void SelectableLevelUpdate_Prefix()
-        {
-            Plugin.Log(LogLevel.Debug, "Clearing selectable level caches");
-            
-            // Clear caches on selectable level change
             _storeItemsAndWeights = null;
             _scrapItemsAndWeights = null;
         }
-    }
+
+        [HarmonyPatch]
+        public static class SelectableLevelUpdatedPatch
+        {
+            [HarmonyTargetMethods]
+            public static IEnumerable<MethodBase> TargetMethods()
+            {
+                return [
+                    AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.GenerateNewLevelClientRpc)),
+                    AccessTools.Method(type: typeof(RoundManager), name: nameof(RoundManager.LoadNewLevel)),
+                    AccessTools.Method(type: typeof(StartOfRound), name: nameof(StartOfRound.ChangeLevel))
+                ];
+            }
+
+            [HarmonyPriority(priority: int.MaxValue)]
+            [HarmonyPrefix]
+            public static void SelectableLevelUpdate_Prefix()
+            {
+                // Update caches on selectablelevel change
+                ClearItemCaches();
+
+                Plugin.Log(LogLevel.Debug, "Clearing selectable level caches");
+            }
+        }
+
+        static GiftBoxItemPatch()
+        {
+            // Clear caches on spawnable scrap update
+            SpawnableScrapUtils.SpawnableScrapUpdated += ClearItemCaches;
+        }
+    #endregion
 
     public class GiftBoxModdedParams
     {
@@ -481,9 +489,6 @@ public static class GiftBoxItemPatch
         {
             return methodIL;
         }
-
-        _storeItemsAndWeights = null;
-        _scrapItemsAndWeights = null;
 
         giftboxBehaviors[DO_NOTHING] = Plugin.doNothingChance.Value;
         giftboxBehaviors[SPAWN_STORE_ITEM] = Plugin.spawnStoreItemChance.Value;

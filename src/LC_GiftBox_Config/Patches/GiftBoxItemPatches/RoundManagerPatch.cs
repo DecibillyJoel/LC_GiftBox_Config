@@ -18,10 +18,8 @@ internal static class RoundManagerPatch
 {
     internal static void AnomalouslySpawnGiftBoxes(RoundManager roundmanager, List<Item> ScrapToSpawn, int spawnOneItemIndex)
     {
-        List<SpawnableItemWithRarity> spawnableScrap = SpawnableScrapUtils.GetSpawnableScrapSafely();
-
         // Don't perform gift box anomaly if the "spawn one item" anomaly is already occuring and the anomalous item is something other than the gift box
-        if (spawnOneItemIndex != -1 && !spawnableScrap[spawnOneItemIndex].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
+        if (spawnOneItemIndex != -1 && !SpawnableScrapUtils.SpawnableScrap[spawnOneItemIndex].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
 
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
@@ -34,14 +32,13 @@ internal static class RoundManagerPatch
 
     internal static void AdjustGiftBoxSpawnWeight(RoundManager roundmanager, int[] weights)
     {
-        List<SpawnableItemWithRarity> spawnableScrap = SpawnableScrapUtils.GetSpawnableScrapSafely();
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
-        if (weights.Length != spawnableScrap.Count)
+        if (weights.Length != SpawnableScrapUtils.SpawnableScrap.Count)
             Plugin.Log(LogLevel.Error, "[LC_GiftBox_Config.Patches.RoundManagerPatch.AdjustGiftBoxSpawnWeight] weights length does not match spawnableScrap length! Wonkiness may occur!");
 
-        for (int j = 0; j < Math.Min(spawnableScrap.Count, weights.Length); j++) {
-            if (!spawnableScrap[j].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) continue;
+        for (int j = 0; j < Math.Min(SpawnableScrapUtils.SpawnableScrap.Count, weights.Length); j++) {
+            if (!SpawnableScrapUtils.SpawnableScrap[j].spawnableItem.LooselyEquals(Plugin.GIFTBOX_ITEM)) continue;
 
             // Gift Box Rarity Multiplier
             if (AnomalyRandom.Next(0, 100) < Plugin.giftboxRarityMultiplierChance.Value)

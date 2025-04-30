@@ -6,6 +6,7 @@
 - Multipliers are now applied before Additions rather than after. This makes it easier to override settings to a certain value by setting the multiplier to a guaranteed 0 and the addition to a guaranteed desired value  
 - Added chances for a gift box to spawn extra instances of its contained item per giftbox behavior  
 - Fixed bug where Price Influence (%) was not being used (wow)  
+- Improved logic for determining available store items and scraps to spawn, and their selection weights  
   
 ## v1.2.0  
   
