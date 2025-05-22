@@ -62,56 +62,6 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
-			// Adds a Thunderstore package to the project
-			"label": "dotnet: Add reference (Thunderstore package)",
-			"type": "shell",
-			"command": "dotnet",
-			"args": [
-				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:AddThunderstorePackage",
-				"-p:ThunderstorePackageName=${input:thunderstorePackageName}",
-				"-p:ThunderstorePackageVersion=${input:thunderstorePackageVersion}",
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			// Removes a Thunderstore package from the project
-			"label": "dotnet: Remove reference (Thunderstore package)",
-			"type": "shell",
-			"command": "dotnet",
-			"args": [
-				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:RemoveThunderstorePackage",
-				"-p:ThunderstorePackageName=${input:thunderstorePackageName}"
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			// Adds a Thunderstore package to the project
-			"label": "dotnet: Add reference (NuGet package)",
-			"type": "shell",
-			"command": "dotnet",
-			"args": [
-				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:AddNuGetPackage",
-				"-p:NuGetPackageName=${input:nugetPackageName}",
-				"-p:NuGetPackageVersion=${input:nugetPackageVersion}",
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
-			// Removes a Thunderstore package from the project
-			"label": "dotnet: Remove reference (NuGet package)",
-			"type": "shell",
-			"command": "dotnet",
-			"args": [
-				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:RemoveNuGetPackage",
-				"-p:NuGetPackageName=${input:nugetPackageName}"
-			],
-			"problemMatcher": "$msCompile"
-		},
-		{
 			// Configure dotnet build as the default build task
 			"type": "dotnet",
 			"task": "build",
@@ -144,28 +94,6 @@
 				"lib"
 			],
 			"default": "src"
-		},
-		// Inputs for task dotnet: Add/Remove reference (NuGet package)
-		{
-			"id": "nugetPackageName",
-			"type": "promptString",
-			"description": "Enter the NuGet package name"
-		},
-		{
-			"id": "nugetPackageVersion",
-			"type": "promptString",
-			"description": "Enter the NuGet package version"
-		},
-		// Inputs for task dotnet: Add/Remove reference (Thunderstore package)
-		{
-			"id": "thunderstorePackageName",
-			"type": "promptString",
-			"description": "Enter the Thunderstore package name"
-		},
-		{
-			"id": "thunderstorePackageVersion",
-			"type": "promptString",
-			"description": "Enter the Thunderstore package version"
 		}
 	]
 }
