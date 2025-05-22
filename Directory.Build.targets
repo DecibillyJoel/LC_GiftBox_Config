@@ -1,29 +1,24 @@
 <Project>
-
-  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference
-      Include="Microsoft.NETFramework.ReferenceAssemblies"
-      PrivateAssets="all"
-      Version="1.0.2"
-    />
-  </ItemGroup>
+  <!-- 
+    Targets for source C# projects
+  -->
 
   <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile"
-      Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)LCMPluginInfo.cs">
+      Outputs="$(IntermediateOutputPath)LCMProjectInfo.cs">
 
     <PropertyGroup>
-      <LCMPluginGuid Condition="'$(LCMPluginGuid)' == ''">$(AssemblyName)</LCMPluginGuid>
-      <LCMPluginName Condition="'$(LCMPluginName)' == ''">$(Product)</LCMPluginName>
-      <LCMPluginVersion Condition="'$(LCMPluginVersion)' == ''">$(Version)</LCMPluginVersion>
+      <LCMProjectGuid Condition="'$(LCMProjectGuid)' == ''">$(AssemblyName)</LCMProjectGuid>
+      <LCMProjectName Condition="'$(LCMProjectName)' == ''">$(Product)</LCMProjectName>
+      <LCMProjectVersion Condition="'$(LCMProjectVersion)' == ''">$(Version)</LCMProjectVersion>
       <GeneratedText><![CDATA[
-internal static class LCMPluginInfo
+internal static class LCMProjectInfo
 {
-  public const string PLUGIN_GUID = "$(LCMPluginGuid)"%3B
-  public const string PLUGIN_NAME = "$(LCMPluginName)"%3B
-  public const string PLUGIN_VERSION = "$(LCMPluginVersion)"%3B
+  public const string PROJECT_GUID = "$(LCMProjectGuid)"%3B
+  public const string PROJECT_NAME = "$(LCMProjectName)"%3B
+  public const string PROJECT_VERSION = "$(LCMProjectVersion)"%3B
 }
 ]]></GeneratedText>
-      <GeneratedFilePath>$(IntermediateOutputPath)LCMPluginInfo.cs</GeneratedFilePath>
+      <GeneratedFilePath>$(IntermediateOutputPath)LCMProjectInfo.cs</GeneratedFilePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -35,5 +30,4 @@ internal static class LCMPluginInfo
         WriteOnlyWhenDifferent="true" Overwrite="true" />
 
   </Target>
-
 </Project>

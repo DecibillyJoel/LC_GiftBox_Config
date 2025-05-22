@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Mod Docs + Icon/">
+    <File Path="docs/CHANGELOG.md" />
+    <File Path="docs/LICENSE.md" />
+    <File Path="docs/README.md" />
+    <File Path="docs/icon.png" />
+  </Folder>
+  <Folder Name="/Thunderstore Packager/">
+    <File Path="src/ThunderstorePackager/Directory.Build.targets" />
+    <File Path="src/ThunderstorePackager/Thunderstore.pubxml" />
+    <File Path="src/ThunderstorePackager/thunderstore.toml" />
+    <Project Path="src/ThunderstorePackager/ThunderstorePackager.proj" Type="C#" />
+  </Folder>
+  <Folder Name="/Libraries/" />
+  <Project Path="src/LCMPublishingTemplate/LCMPublishingTemplate.csproj" />
+</Solution>

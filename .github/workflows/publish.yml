@@ -1,4 +1,4 @@
-name: Publish Mod To TS
+name: Publish Mod To TS & Generate Release to GitHub
 
 on:
   push:
@@ -19,15 +19,24 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
 
-      - name: Restore and Build
+      - name: Restore Tools
         run: |
           dotnet restore --locked-mode
           dotnet tool restore
-          dotnet build
 
-      - name: Publish to TS
+      - name: Build & Publish to TS
         env:
           TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN }}
           PACKAGE_VERSION: ${{ github.ref_name }}
         run: |
+          dotnet clean -c Release
           dotnet publish -c Release
+      
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v2
+
+        with:
+          generate_release_notes: true
+          make_latest: "true"
+          files: |
+            artifacts/tspublish/build/*.zip

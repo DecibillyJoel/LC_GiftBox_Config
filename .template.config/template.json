@@ -28,10 +28,6 @@
       "replacement": ""
     }
   },
-  "guids": [
-    "1514480A-2DCB-4E4D-A8E4-0BD4D1F00A25",
-    "AB5F80E1-8E02-466C-93E3-61670519ABE8"
-  ],
   "identity": "dev.mamallama.templates.lcm.tspublishing",
   "name": "Lethal Company Modding Template + Thunderstore Publishing",
   "shortName": "LCM_TS_Publishing",
@@ -44,29 +40,35 @@
     }
   ],
   "symbols": {
-    "1514480A-2DCB-4E4D-A8E4-0BD4D1F00A25": {
-      "type": "generated",
-      "generator": "guid"
-    },
-    "AB5F80E1-8E02-466C-93E3-61670519ABE8": {
-      "type": "generated",
-      "generator": "guid"
-    },
-    "ProjectAUTHOR": {
+    "PackageNAME": {
       "datatype": "string",
       "defaultIfOptionWithoutValue": true,
-      "defaultValue": "MyAuthorName",
-      "description": "The author of this project. Copy this from your Thunderstore team name for publishing",
+      "defaultValue": "MyModName",
+      "description": "The name of this package",
       "forms": {
         "global": [
           "onlyWordCharacters"
         ]
       },
       "isRequired": true,
-      "replaces": "__PROJECT_AUTHOR__",
+      "replaces": "__PACKAGE_NAME__",
       "type": "parameter"
     },
-    "ProjectDESC": {
+    "PackageAUTHOR": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "MyAuthorName",
+      "description": "The author of this package. Copy this from your Thunderstore team name for publishing",
+      "forms": {
+        "global": [
+          "onlyWordCharacters"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_AUTHOR__",
+      "type": "parameter"
+    },
+    "PackageDESC": {
       "datatype": "string",
       "defaultIfOptionWithoutValue": true,
       "defaultValue": "This is a mod description, 250 characters max!",
@@ -77,24 +79,24 @@
         ]
       },
       "isRequired": true,
-      "replaces": "__PROJECT_DESC__",
+      "replaces": "__PACKAGE_DESC__",
       "type": "parameter"
     },
-    "ProjectGUID": {
+    "PackageGUID": {
       "datatype": "string",
       "defaultIfOptionWithoutValue": true,
-      "defaultValue": "com.github.me.projectname",
-      "description": "The GUID of your project used by BepinEx for dependencies",
+      "defaultValue": "com.github.me.packagename",
+      "description": "The GUID of your package used by BepinEx for dependencies",
       "forms": {
         "global": [
           "onlyWordCharactersAndDot"
         ]
       },
       "isRequired": true,
-      "replaces": "__PROJECT_GUID__",
+      "replaces": "__PACKAGE_GUID__",
       "type": "parameter"
     },
-    "ProjectURL": {
+    "PackageURL": {
       "datatype": "string",
       "defaultIfOptionWithoutValue": true,
       "defaultValue": "https://github.com/LethalCompanyModding/LCM-Template-TSPublishing",
@@ -105,7 +107,7 @@
         ]
       },
       "isRequired": true,
-      "replaces": "__PROJECT_URL__",
+      "replaces": "__PACKAGE_URL__",
       "type": "parameter"
     }
   },

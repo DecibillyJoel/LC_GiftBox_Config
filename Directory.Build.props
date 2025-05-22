@@ -1,24 +1,82 @@
 <Project>
-
+  <!-- TS Package Props -->
+  <PropertyGroup>
+    <PackageDir>$(MSBuildThisFileDirectory)</PackageDir>
+    <PackageName>__PACKAGE_NAME__</PackageName>
+    <PackageAuthor>__PACKAGE_AUTHOR__</PackageAuthor>
+    <PackageDesc>__PACKAGE_DESC__</PackageDesc>
+    <PackageGUID>__PACKAGE_GUID__</PackageGUID>
+    <PackageUrl>__PACKAGE_URL__</PackageUrl>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</PackageVersion>
+    <IsTSPackager>False</IsTSPackager>
+  </PropertyGroup>
+  <!-- Git Repo Props -->
   <PropertyGroup>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>__PROJECT_URL__</RepositoryUrl>
+    <RepositoryUrl>$(PackageUrl)</RepositoryUrl>
   </PropertyGroup>
-
+  <!-- C# Proj Props -->
   <PropertyGroup>
+    <!-- SolutionDir only exists in VS / VSCode, so we'll define it as the MSBuild caller's directory -->
+    <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildStartupDirectory)\</SolutionDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <PublishProfile>Thunderstore</PublishProfile>
+    <PublishProfileFullPath>$(PackageDir)src\ThunderstorePackager\Thunderstore.pubxml</PublishProfileFullPath>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPivots>$(Configuration.ToLower())\</ArtifactsPivots>
   </PropertyGroup>
-
+  <!-- Debug Props -->
   <PropertyGroup>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
+    <PathMap>$([System.IO.Path]::GetFullPath('$(PackageDir)'))=./</PathMap>
   </PropertyGroup>
+  <!--
+      References that will be available to all .csproj. For references you want available to
+      only a particular .csproj, add them to the .csproj instead.
+      
+      When adding additional references, ensure you use <Private>false</Private> to
+      ensure the DLL is explicitly NOT copied to the output directory. This is because
+      the DLLs are already included in the game and will be loaded from there.
+      (NOTE: Use <PrivateAssets>all</PrivateAssets> for PackageReferences instead)
 
+      Further, if the DLL is not included as part of the game, you should be using a
+      Dependency in your thunderstore.toml file to ensure the DLL is available to the
+      game when your mod is loaded.
+
+      Assembly Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
+      Project Example: <ProjectReference Include="$(PackageDir)src\MyProject\MyProject.csproj" Private="false" />
+      NuGet Example: <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+      Thunderstore Example: <PackageReference Include="Evaisa-LethalLib" Version="0.16.1" PrivateAssets="all" />
+    -->
+  <ItemGroup>
+    <PackageReference 
+      Include="BepInEx.AssemblyPublicizer.MSBuild" 
+      Version="0.4.*" 
+      PrivateAssets="all" 
+    />
+
+    <PackageReference
+      Include="BepInEx.Analyzers"
+      Version="1.*"
+      PrivateAssets="all"
+    />
+
+    <PackageReference
+      Include="BepInEx.Core"
+      Version="5.4.21"
+      PrivateAssets="all"
+    />
+
+    <PackageReference
+      Include="LethalCompany.GameLibs.Steam"
+      Version="69.0.1-ngd.0"
+      PrivateAssets="all"
+    />
+  </ItemGroup>
 </Project>
