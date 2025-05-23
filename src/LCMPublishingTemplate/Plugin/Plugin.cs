@@ -49,7 +49,7 @@ public class Plugin : BaseUnityPlugin
     Instance = this;
 
     // Log our awake here so we can see it in LogOutput.txt file
-    LogInfo($"Plugin {LCMProjectInfo.PROJECT_NAME} is loaded!");
+    LogInfo($"Plugin {PLUGIN_NAME} is loaded!");
   }
 
 }
