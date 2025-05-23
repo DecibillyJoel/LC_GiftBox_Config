@@ -16,23 +16,26 @@ namespace LCMPublishingTemplate.Plugin;
 public class Plugin : BaseUnityPlugin
 {
   #region Plugin Info
-  // Here, we make the plugin instance and info accessible anywhere \\
-    public static Plugin Instance {get; private set;} = null!;
+    /*
+      Here, we make the plugin instance and info accessible anywhere
+    */
+    
+    public static Plugin Instance { get; private set; } = null!;
     public static readonly string PLUGIN_GUID = LCMProjectInfo.PROJECT_GUID;
     public static readonly string PLUGIN_NAME = LCMProjectInfo.PROJECT_NAME;
     public static readonly string PLUGIN_VERSION = LCMProjectInfo.PROJECT_VERSION;
   #endregion
 
   #region Log Methods
-  /* 
-    BepInEx makes you a ManualLogSource for free called "Logger"
-    that is accessed via the BaseUnityPlugin instance. Your plugin's
-    code can find it by using Plugin.Instance.Logger.
+    /* 
+      BepInEx makes you a ManualLogSource for free called "Logger"
+      that is accessed via the BaseUnityPlugin instance. Your plugin's
+      code can find it by using Plugin.Instance.Logger.
 
-    For convenience, we define static logging functions here so that
-    the logger's functions can be called via Plugin.LogInfo(...),
-    Plugin.LogDebug(...), Plugin.Log(...), etc.
-  */
+      For convenience, we define static logging functions here so that
+      the logger's functions can be called via Plugin.LogInfo(...),
+      Plugin.LogDebug(...), Plugin.Log(...), etc.
+    */
   
     public static void Log(LogLevel level, object data) => Instance.Logger.Log(level, data);
     public static void LogFatal(object data) => Instance.Logger.LogFatal(data);
