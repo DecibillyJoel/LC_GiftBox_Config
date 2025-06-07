@@ -87,15 +87,27 @@
             WorkingDirectory="$(PackageDir)"
         />
 
-        <!-- Collect project files (src) -->
-        <ItemGroup Condition="'$(GitSubmoduleProjRefType)' == 'src'">
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.csproj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.proj" />
+        <!-- Collect well structured project files -->
+        <ItemGroup>
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.proj" />
         </ItemGroup>
+
+        <!-- If proj ref type is src, set solution folder behavior to root -->
+        <!-- If proj ref type is lib, set solution folder to "Libraries\"-->
+        <PropertyGroup>
+            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'src'">--in-root</SolutionFolderBehavior>
+            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'lib'">--solution-folder "\Libraries\$(GitSubmoduleDirName)\"</SolutionFolderBehavior>
+        </PropertyGroup>
 
         <!-- Add submodule to the solution (src) -->
         <Exec 
-            Command='dotnet sln add "%(GitSubmoduleProjectFiles.FullPath)"' 
+            Condition="'%(GitSubmoduleProjectFiles.FullPath)' != ''"
+            Command='dotnet sln add $(SolutionFolderBehavior) "%(GitSubmoduleProjectFiles.FullPath)"' 
             ConsoleToMSBuild="true"
             WorkingDirectory="$(PackageDir)"
         />
@@ -118,6 +130,7 @@
 
         <!-- Remove submodule from the solution -->
         <Exec 
+            Condition="'%(GitSubmoduleProjectFiles.FullPath)' != ''"
             Command='dotnet sln remove "%(GitSubmoduleProjectFiles.FullPath)"' 
             ConsoleToMSBuild="true"
             WorkingDirectory="$(PackageDir)"

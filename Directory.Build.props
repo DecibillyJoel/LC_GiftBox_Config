@@ -28,6 +28,7 @@
     <PublishProfileFullPath>$(PackageDir)src\ThunderstorePackager\Thunderstore.pubxml</PublishProfileFullPath>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(PackageDir)artifacts</ArtifactsPath>
     <ArtifactsPivots>$(Configuration.ToLower())\</ArtifactsPivots>
   </PropertyGroup>
   <!-- Debug Props -->
