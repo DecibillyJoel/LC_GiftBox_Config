@@ -101,7 +101,7 @@
         <!-- If proj ref type is lib, set solution folder to "Libraries\"-->
         <PropertyGroup>
             <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'src'">--in-root</SolutionFolderBehavior>
-            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'lib'">--solution-folder "\Libraries\$(GitSubmoduleDirName)\"</SolutionFolderBehavior>
+            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'lib'">--solution-folder "\\Libraries\\$(GitSubmoduleDirName)\\"</SolutionFolderBehavior>
         </PropertyGroup>
 
         <!-- Add submodule to the solution (src) -->
