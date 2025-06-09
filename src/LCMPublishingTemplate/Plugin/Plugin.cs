@@ -23,6 +23,7 @@ public class Plugin : BaseUnityPlugin
     public static Plugin Instance { get; private set; } = null!;
     public static readonly string PLUGIN_GUID = LCMProjectInfo.PROJECT_GUID;
     public static readonly string PLUGIN_NAME = LCMProjectInfo.PROJECT_NAME;
+    public static readonly string PLUGIN_AUTHORS = LCMProjectInfo.PROJECT_AUTHORS;
     public static readonly string PLUGIN_VERSION = LCMProjectInfo.PROJECT_VERSION;
   #endregion
 

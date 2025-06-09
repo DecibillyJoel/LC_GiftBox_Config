@@ -9,12 +9,14 @@
     <PropertyGroup>
       <LCMProjectGuid Condition="'$(LCMProjectGuid)' == ''">$(AssemblyName)</LCMProjectGuid>
       <LCMProjectName Condition="'$(LCMProjectName)' == ''">$(Product)</LCMProjectName>
+      <LCMProjectAuthors Condition="'$(LCMProjectAuthors)' == ''">$(Authors)</LCMProjectAuthors>
       <LCMProjectVersion Condition="'$(LCMProjectVersion)' == ''">$(Version)</LCMProjectVersion>
       <GeneratedText><![CDATA[
 internal static class LCMProjectInfo
 {
   public const string PROJECT_GUID = "$(LCMProjectGuid)"%3B
   public const string PROJECT_NAME = "$(LCMProjectName)"%3B
+  public const string PROJECT_AUTHORS = "$(LCMProjectAuthors)"%3B
   public const string PROJECT_VERSION = "$(LCMProjectVersion)"%3B
 }
 ]]></GeneratedText>
