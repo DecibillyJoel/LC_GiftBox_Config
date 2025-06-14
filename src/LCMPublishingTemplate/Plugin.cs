@@ -1,7 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 
-namespace LCMPublishingTemplate.Plugin;
+namespace LCMPublishingTemplate;
 
 /*
   Here are some basic resources on code style and naming conventions to help
