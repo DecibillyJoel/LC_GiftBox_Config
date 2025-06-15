@@ -2,7 +2,8 @@ name: Publish Mod To TS & Generate Release to GitHub
 
 on:
   push:
-    tags: "*"
+    tags: 
+      - "*"
 
 jobs:
   publish:
