@@ -80,9 +80,9 @@
             WorkingDirectory="$(PackageDir)"
         />
 
-        <!-- Fetch submodule -->
+        <!-- Fetch submodule recursively -->
         <Exec 
-            Command='git submodule update --init --remote "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"' 
+            Command='git submodule update --init --remote --recursive "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"'
             ConsoleToMSBuild="true"
             WorkingDirectory="$(PackageDir)"
         />

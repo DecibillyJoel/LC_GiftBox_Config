@@ -14,6 +14,8 @@ jobs:
       # Use checkout to publish the files in your repo
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Dotnet
         uses: actions/setup-dotnet@v4
