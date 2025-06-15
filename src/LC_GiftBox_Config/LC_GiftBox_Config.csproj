@@ -45,10 +45,10 @@
   -->
 
   <ItemGroup>
-    <Reference Include="ILUtils" HintPath="$(SolutionDir)/libs/ILUtils/ILUtils.dll" Private="false" />
+    <ProjectReference Include="$(SolutionDir)/libs/ILUtils/src/ILUtils/ILUtils.csproj" Private="false" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="LCUtils" HintPath="$(SolutionDir)/libs/LCUtils/LCUtils.dll" Private="false" />
+    <ProjectReference Include="$(SolutionDir)/libs/LCUtils/src/LCUtils/LCUtils.csproj" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

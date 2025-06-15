@@ -385,6 +385,15 @@
         "type": "Transitive",
         "resolved": "2022.3.9",
         "contentHash": "sSxqZjd05U0NWlX+eappdlsEuXFvDRHkUaClDVTocGRzCmIwNvgGJIPh22lGklIpNZ3cJZneYJkIUnEIazR8VA=="
+      },
+      "com.github.decibillyjoel.ILUtils": {
+        "type": "Project"
+      },
+      "com.github.decibillyjoel.LCUtils": {
+        "type": "Project",
+        "dependencies": {
+          "com.github.decibillyjoel.ILUtils": "[1.0.4, )"
+        }
       }
     }
   }

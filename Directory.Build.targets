@@ -38,24 +38,25 @@ internal static class BepPluginInfo
 
   </Target>
 
-  <Target Name="DownloadILUtils" Condition="!Exists('$(SolutionDir)/libs/ILUtils/ILUtils.dll')">
-    <DownloadFile
-      SourceUrl="https://github.com/DecibillyJoel/ILUtils/releases/latest/download/ILUtils.dll"
-      DestinationFolder="$(SolutionDir)/libs/ILUtils/"
-      DestinationFileName="ILUtils.dll"
+  <Target Name="CleanThunderstoreArtifacts" AfterTargets="Clean;">
+    <RemoveDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\build" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\build" />
+    <WriteLinesToFile 
+      File="$(MSBuildThisFileDirectory)\artifacts\tspublish\build\.gitkeep" 
+    />
+    <RemoveDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist\plugins" />
+    <WriteLinesToFile 
+      File="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist\plugins\.gitkeep" 
     />
   </Target>
 
-  <Target Name="DownloadLCUtils" Condition="!Exists('$(SolutionDir)/libs/LCUtils/LCUtils.dll')">
-    <DownloadFile
-      SourceUrl="https://github.com/DecibillyJoel/LCUtils/releases/latest/download/LCUtils.dll"
-      DestinationFolder="$(SolutionDir)/libs/LCUtils/"
-      DestinationFileName="LCUtils.dll"
-    />
-  </Target>
-
-  <Target Name="FetchNeededAssemblies" AfterTargets="AfterClean;" BeforeTargets="BeforeBuild;BeforeRebuild;BeforeCompile;BeforeResolveReference;">
-    <CallTarget Targets="DownloadILUtils;DownloadLCUtils" />
+  <Target Name="MakeLibDebugTSPublish" AfterTargets="Publish;" Condition="'$(SolutionDir)' == '$(MSBuildThisFileDirectory)' And '$(Configuration)' == 'Debug'">
+    <ItemGroup>
+      <LibsToBuild Include="$(SolutionDir)\libs\**\*.csproj" />
+    </ItemGroup>
+    <Exec Command='dotnet publish "%(LibsToBuild.FullPath)" -c Debug -p:TCLI_Verb=build -p:GenerateFullPaths=true -p:SolutionDir="$(SolutionDir)\." -p:TCLI_PackageDir="$(SolutionDir)\libs\%(LibsToBuild.Filename)\." -v m'/>
   </Target>
 
 </Project>

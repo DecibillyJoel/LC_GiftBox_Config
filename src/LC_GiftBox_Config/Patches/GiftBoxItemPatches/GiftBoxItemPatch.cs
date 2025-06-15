@@ -43,116 +43,148 @@ public static class GiftBoxItemPatch
     #endregion
 
     #region Store Items and Weights
-        private static Dictionary<Item, double>? _storeItemsAndWeights;
+        private static Dictionary<PersistentItemReference, double>? _storeItemsAndWeights;
         
-        public static Dictionary<Item, double> GetStoreItemsAndWeights()
+        public static Dictionary<PersistentItemReference, double> GetStoreItemsAndWeights()
         {
             if (_storeItemsAndWeights != null) return _storeItemsAndWeights;
 
             _storeItemsAndWeights = [];
 
             Item[] buyableItemsList = HUDManager.Instance?.terminalScript?.buyableItemsList ?? [];
-            CompatibleNoun[] compatibleNouns = HUDManager.Instance?.terminalScript?.terminalNodes?.allKeywords?.FirstOrDefault(keyword => keyword.name == "Buy")?.compatibleNouns ?? [];
+            Item?[]? buyableItemsWithNouns = !Plugin.storeItemMustBeBuyable.Value ? null : 
+                (HUDManager.Instance?.terminalScript?.terminalNodes?.allKeywords?.FirstOrDefault<TerminalKeyword?>(keyword => keyword?.name == "Buy")?.compatibleNouns
+                ?.Select(noun => buyableItemsList.ElementAtOrDefault<Item?>(noun.result.buyItemIndex))?.ToArray()
+                ?? []);
             
             // Store all items in buyableItemsList that are not excluded via configs, and their weights
-            buyableItemsList.Do(item => 
+            Plugin.perItemConfigs.Keys.Do(itemRef => 
             {
-                if (item == null) return;
-                if (_storeItemsAndWeights.ContainsKey(item)) return;
-                if (Plugin.perItemConfigs.TryGetValue(item, out var itemConfig) && itemConfig.blacklisted.Value) return;
-                if (item.creditsWorth < Plugin.storeItemPriceMin.Value || item.creditsWorth > Plugin.storeItemPriceMax.Value) return;
-                
-                _storeItemsAndWeights.Add(item, Math.Pow(item.creditsWorth, Plugin.storeItemPriceInfluence.Value / 100.0));
-            });
+                // Skip if itemRef is already registered, or if itemRef is blacklisted
+                if (_storeItemsAndWeights.ContainsKey(itemRef)) return;
+                if (Plugin.perItemConfigs[itemRef].blacklisted.Value) return;
 
-            // Remove unbuyable items
-            if (Plugin.storeItemMustBeBuyable.Value) 
-            {
-                var buyableItems = compatibleNouns.Select(noun => buyableItemsList.ElementAtOrDefault(noun.result.buyItemIndex));
-                _storeItemsAndWeights.Keys.Except(buyableItemsList).Do(unbuyableItem => _storeItemsAndWeights.Remove(unbuyableItem));
-            }
+                // Skip if Item cannot be accessed
+                Item? item = itemRef.Item;
+                if (item == null) return;
+
+                // Skip if not a store item
+                if (!buyableItemsList.Contains(item)) return;
+                
+                // Skip if item price is outside the configured range
+                if (item.creditsWorth < Plugin.storeItemPriceMin.Value) return;
+                if (item.creditsWorth > Plugin.storeItemPriceMax.Value) return;
+
+                // Skip if store items must be buyable as per config, and this store item is not buyable
+                // ((null == false) is false. So return will only occur if buyableItemsWithNouns is not null)
+                if (buyableItemsWithNouns?.Contains(item) == false) return;
+                
+                _storeItemsAndWeights.Add(itemRef, Math.Pow(item.creditsWorth, Plugin.storeItemPriceInfluence.Value / 100.0).IfNaNThen(0));
+            });
 
             return _storeItemsAndWeights;
         }
 
-        public static Dictionary<Item, double> GetStoreItemsAndWeightsWithConfigRolls(Random random)
+        public static Dictionary<PersistentItemReference, double> GetStoreItemsAndWeightsWithConfigRolls(Random random)
         {
             return GetStoreItemsAndWeights().ToDictionary(
                 pair => pair.Key, 
                 pair => {
-                    if (!Plugin.perItemConfigs.TryGetValue(pair.Key, out var itemConfig)) return pair.Value; 
-
+                    var itemConfig = Plugin.perItemConfigs[pair.Key];
                     double weight = pair.Value;
 
                     // [Per-Item Config] - Selection Weight Multiplier
                     if (random.Next(0, 100) < itemConfig.selectionWeightMultiplierChance.Value)
                         weight *= random.Next(itemConfig.selectionWeightMultiplierMin.Value, itemConfig.selectionWeightMultiplierMax.Value + 1) / 100.0;
 
+                    weight = weight.IfNaNThen(0);
+
                     // [Per-Item Config] - Selection Weight Addition
                     if (random.Next(0, 100) < itemConfig.selectionWeightAdditionChance.Value)
                         weight += random.Next(itemConfig.selectionWeightAdditionMin.Value, itemConfig.selectionWeightAdditionMax.Value + 1);
 
-                    return weight;
+                    return Math.Clamp(weight.IfNaNThen(0), 0, int.MaxValue);
                 }
             );
         }
     #endregion
 
     #region Scrap Items and Weights
-        private static Dictionary<Item, double>? _scrapItemsAndWeights;
+        private static Dictionary<PersistentItemReference, double>? _scrapItemsAndWeights;
         
-        public static Dictionary<Item, double> GetScrapItemsAndWeights()
+        public static Dictionary<PersistentItemReference, double> GetScrapItemsAndWeights()
         {
             if (_scrapItemsAndWeights != null) return _scrapItemsAndWeights;
 
             _scrapItemsAndWeights = [];
             double scrapValueMultiplier = RoundManager.Instance?.scrapValueMultiplier ?? 0.4;
-            Dictionary<Item, double> scrapRarities = SpawnableScrapUtils.SpawnableScrap.ToDictionary(item => item.spawnableItem, item => (double)item.rarity);
 
             // Store all scrap items that are not excluded via configs, and their weights
-            ItemUtils.AllItems.Do(item => 
+            Plugin.perItemConfigs.Keys.Do(itemRef => 
             {
+                // Skip if itemRef is already registered, or if itemRef is blacklisted
+                if (Plugin.perItemConfigs[itemRef].blacklisted.Value) return;
+                if (_scrapItemsAndWeights.ContainsKey(itemRef)) return;
+
+                // Skip if Item cannot be accessed
+                Item? item = itemRef.Item;
                 if (item == null) return;
-                if (!item.isScrap) return;
-                if (_scrapItemsAndWeights.ContainsKey(item)) return;
-                if (Plugin.perItemConfigs.TryGetValue(item, out var itemConfig) && itemConfig.blacklisted.Value) return;
-                if ((item.maxValue * scrapValueMultiplier < Plugin.scrapValueMin.Value) || (item.minValue * scrapValueMultiplier > Plugin.scrapValueMax.Value)) return;
-                if (scrapRarities.GetValueOrDefault(item) < Plugin.scrapRarityMin.Value || scrapRarities.GetValueOrDefault(item) > Plugin.scrapRarityMax.Value) return;
+
+                // Skip if item is not a scrap item / key
+                if (!item.isScrap && (itemRef.grabbableObjectType != typeof(KeyItem))) return;
+
+                // Calculate effective item min and max based on scrap value multiplier
+                double itemMinValue = Math.Min(item.minValue, item.maxValue) * scrapValueMultiplier;
+                double itemMaxValue = Math.Max(item.minValue, item.maxValue) * scrapValueMultiplier;
                 
-                _scrapItemsAndWeights.Add(item, 
-                    Math.Pow((item.minValue + item.maxValue) / 2.0 * scrapValueMultiplier, Plugin.scrapValueInfluence.Value / 100.0)
-                    + Math.Pow(scrapRarities.GetValueOrDefault(item), Plugin.scrapRarityInfluence.Value / 100.0)
+                // Skip if scrap value is outside the configured range
+                if (itemMaxValue < Plugin.scrapValueMin.Value) return;
+                if (itemMinValue > Plugin.scrapValueMax.Value) return;
+
+                // Skip if scrap rarity is outside the configured range
+                int rarity = item.GetRarity();
+                if (rarity < Plugin.scrapRarityMin.Value) return;
+                if (rarity > Plugin.scrapRarityMax.Value) return;
+
+                // Clamp effective min/max based on config values
+                itemMinValue = Math.Max(itemMinValue, Plugin.scrapValueMin.Value);
+                itemMaxValue = Math.Min(itemMaxValue, Plugin.scrapValueMax.Value);
+                
+                _scrapItemsAndWeights.Add(itemRef, 
+                    Math.Pow((itemMinValue + itemMaxValue) / 2.0 * scrapValueMultiplier, Plugin.scrapValueInfluence.Value / 100.0).IfNaNThen(0)
+                    + Math.Pow(rarity, Plugin.scrapRarityInfluence.Value / 100.0).IfNaNThen(0)
                 );
             });
 
             return _scrapItemsAndWeights;
         }
 
-        public static Dictionary<Item, double> GetScrapItemsAndWeightsWithConfigRolls(Random random)
+        public static Dictionary<PersistentItemReference, double> GetScrapItemsAndWeightsWithConfigRolls(Random random)
         {
             return GetScrapItemsAndWeights().ToDictionary(
                 pair => pair.Key, 
                 pair => {
-                    if (!Plugin.perItemConfigs.TryGetValue(pair.Key, out var itemConfig)) return pair.Value; 
-
+                    var itemConfig = Plugin.perItemConfigs[pair.Key];
                     double weight = pair.Value;
 
                     // [Per-Item Config] - Selection Weight Multiplier
                     if (random.Next(0, 100) < itemConfig.selectionWeightMultiplierChance.Value)
                         weight *= random.Next(itemConfig.selectionWeightMultiplierMin.Value, itemConfig.selectionWeightMultiplierMax.Value + 1) / 100.0;
 
+                    weight = weight.IfNaNThen(0);
+
                     // [Per-Item Config] - Selection Weight Addition
                     if (random.Next(0, 100) < itemConfig.selectionWeightAdditionChance.Value)
                         weight += random.Next(itemConfig.selectionWeightAdditionMin.Value, itemConfig.selectionWeightAdditionMax.Value + 1);
 
-                    return weight;
+                    return Math.Clamp(weight, 0, int.MaxValue);
                 }
             );
         }
     #endregion
 
     #region Cache Management
-        public static void ClearItemCaches(List<SpawnableItemWithRarity>? spawnableScrap = null)
+        public static void ClearItemCaches()
         {
             Plugin.Log(LogLevel.Debug, "Clearing item caches");
 
@@ -308,20 +340,22 @@ public static class GiftBoxItemPatch
         giftboxRemainingBehaviors[DO_NOTHING] = 0;
         
         // Keep trying until a behavior succeeds
-        while (giftboxRemainingBehaviors.Sum() > 0) {
+        while (giftboxRemainingBehaviors.Sum() > 0) 
+        {
             switch (behaviorIndex) {
                 case SPAWN_NOTHING: // Gift Box - Spawn Nothing
+                {
                     return true; 
-                case SPAWN_STORE_ITEM: // Gift Box - Spawn Store Item 
+                }
+                case SPAWN_STORE_ITEM: // Gift Box - Spawn Store Item
+                {
                     var storeItemsAndWeights = GetStoreItemsAndWeightsWithConfigRolls(giftboxBehaviorSeed);
-
-                    int storeItemIndex = Probability.GetRandomWeightedIndex(storeItemsAndWeights.Values.ToList(), giftboxBehaviorSeed);
-                    Item? storeItem = storeItemsAndWeights.Keys.ElementAtOrDefault(storeItemIndex);
+                    PersistentItemReference? storeItemRef = Probability.GetRandomPairFromWeightedValues(storeItemsAndWeights, giftboxBehaviorSeed)?.key;
                     
-                    if (storeItem == null) break;
+                    if (storeItemRef == null || storeItemRef.Item == null) break;
 
-                    giftbox.objectInPresentItem = storeItem;
-                    giftbox.objectInPresent = storeItem.spawnPrefab;
+                    giftbox.objectInPresentItem = storeItemRef.Item;
+                    giftbox.objectInPresent = storeItemRef.SpawnPrefab;
 
                     // Store Item Extra Spawn Chances \\
                     
@@ -339,38 +373,37 @@ public static class GiftBoxItemPatch
 
                     // Per-Item Config Extra Spawn Chances \\
                     
-                    var storeItemConfig = Plugin.perItemConfigs.GetValueOrDefault(storeItem);
-                    
-                    if (storeItemConfig.ignoreGlobalSpawnExtraChance.Value)
-                        moddedParams.SpawnCount = 1;
+                    if (Plugin.perItemConfigs.TryGetValue(storeItemRef, out var storeItemConfig))
+                    {
+                        if (storeItemConfig.ignoreGlobalSpawnExtraChance.Value)
+                            moddedParams.SpawnCount = 1;
 
-                    if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn1ExtraChance.Value)
-                        moddedParams.SpawnCount += 1;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn2ExtraChance.Value)
-                        moddedParams.SpawnCount += 2;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn4ExtraChance.Value)
-                        moddedParams.SpawnCount += 4;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn8ExtraChance.Value)
-                        moddedParams.SpawnCount += 8;
+                        if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn1ExtraChance.Value)
+                            moddedParams.SpawnCount += 1;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn2ExtraChance.Value)
+                            moddedParams.SpawnCount += 2;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn4ExtraChance.Value)
+                            moddedParams.SpawnCount += 4;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < storeItemConfig.spawn8ExtraChance.Value)
+                            moddedParams.SpawnCount += 8;
+                    }
 
                     return true;
+                }
                 case SPAWN_GIFTBOX: // Gift Box - Spawn Gift Box
+                {
                     if (parentGiftboxParams != null) // Copy parent's nested scrap id
-                    {
                         moddedParams.NestedScrapId = parentGiftboxParams.NestedScrapId;
-                    } 
                     else // Randomly select a nested scrap id
                     {
                         var scrapItemsAndWeights = GetScrapItemsAndWeightsWithConfigRolls(giftboxBehaviorSeed);
-
-                        int nestedScrapIndex = Probability.GetRandomWeightedIndex(scrapItemsAndWeights.Values.ToList(), giftboxBehaviorSeed);
-                        Item? nestedScrapItem = scrapItemsAndWeights.Keys.ElementAtOrDefault(nestedScrapIndex);
-
-                        if (nestedScrapItem != null)
-                            moddedParams.NestedScrapId = StartOfRound.Instance.allItemsList.itemsList.FindIndex(item => item == nestedScrapItem);
+                        PersistentItemReference? nestedScrapItemRef = Probability.GetRandomPairFromWeightedValues(scrapItemsAndWeights, giftboxBehaviorSeed)?.key;
+                        
+                        if (nestedScrapItemRef?.Item != null)
+                            moddedParams.NestedScrapId = StartOfRound.Instance.allItemsList.itemsList.FindIndex(item => item == nestedScrapItemRef.Item);
                     }
 
                     // Contained Gift Box Extra Spawn Chances
@@ -390,34 +423,47 @@ public static class GiftBoxItemPatch
                         moddedParams.SpawnCount += 16;
 
                     goto case SPAWN_SCRAP;
+                }
                 case SPAWN_SCRAP: // Gift Box - Spawn Scrap
-                    Item? scrap;
-                    if (behaviorIndex == SPAWN_GIFTBOX) // Spawn gift box
-                    {
-                        scrap = giftbox.itemProperties;
-                    }
-                    else if (parentGiftboxParams?.NestedScrapId != null) // Spawn parent's nested scrap item
-                    {
-                        scrap = StartOfRound.Instance.allItemsList.itemsList.ElementAtOrDefault(parentGiftboxParams.NestedScrapId);
-                    } 
-                    else // Spawn random scrap
+                {
+                    PersistentItemReference? scrapRef = null;
+
+                    // Use parent giftbox properties if selected behavior is SPAWN_GIFTBOX
+                    if (behaviorIndex == SPAWN_GIFTBOX)
+                        scrapRef = giftbox.itemProperties.GetPersistentReference();
+
+                    // Use nested scrap id if available and valid
+                    scrapRef ??= StartOfRound.Instance.allItemsList.itemsList.ElementAtOrDefault<Item?>(parentGiftboxParams?.NestedScrapId ?? -1)?.GetPersistentReference();
+                    
+                    // Randomly select a scrap item if none has been selected
+                    if (scrapRef == null)
                     {
                         var scrapItemsAndWeights = GetScrapItemsAndWeightsWithConfigRolls(giftboxBehaviorSeed);
 
-                        int scrapIndex = parentGiftboxParams?.NestedScrapId ?? Probability.GetRandomWeightedIndex(scrapItemsAndWeights.Values.ToList(), giftboxBehaviorSeed);
-                        scrap = scrapItemsAndWeights.Keys.ElementAtOrDefault(scrapIndex);
-                    } 
-                        
-                    if (scrap == null) break;
+                        scrapItemsAndWeights.Do(keyAndValue => {
+                            Plugin.Log(LogLevel.Debug, $"SHOOBEDOOP: {keyAndValue.Key.configName} = {keyAndValue.Key.Item} = {keyAndValue.Value}");
+                        });
 
-                    giftbox.objectInPresentItem = scrap;
-                    giftbox.objectInPresent = scrap.spawnPrefab;
+                        scrapRef = Probability.GetRandomPairFromWeightedValues(scrapItemsAndWeights, giftboxBehaviorSeed)?.key;
+                    } 
+                    
+                    // if all has failed, welp, womp womp
+                    if (scrapRef == null || scrapRef.Item == null) break;
+
+                    giftbox.objectInPresentItem = scrapRef.Item;
+                    giftbox.objectInPresent = scrapRef.SpawnPrefab;
+
+                    // TODO: Figure out what happens when objectInPresentValue is too big
 
                     // Max value is unreachable, but this is vanilla behavior soooooo...
                     giftbox.objectInPresentValue = valueSeed.Next(giftbox.objectInPresentItem.minValue, giftbox.objectInPresentItem.maxValue);
 
                     // Apply RoundManager scrap value multiplier
                     giftbox.objectInPresentValue = (int)(giftbox.objectInPresentValue * RoundManager.Instance.scrapValueMultiplier);
+
+                    // Clamp scrap value to configured min and max
+                    if (!scrapRef.Item.LooselyEquals(Plugin.GIFTBOX_ITEM))
+                        giftbox.objectInPresentValue = Math.Clamp(giftbox.objectInPresentValue, Plugin.scrapValueMin.Value, Plugin.scrapValueMax.Value);
 
                     // Gift Box - Scrap Value Multiplier
                     if (valueSeed.Next(0, 100) < Plugin.scrapValueMultiplierChance.Value)
@@ -427,13 +473,16 @@ public static class GiftBoxItemPatch
                     if (valueSeed.Next(0, 100) < Plugin.scrapValueAdditionChance.Value)
                         giftbox.objectInPresentValue += valueSeed.Next(Plugin.scrapValueAdditionMin.Value, Plugin.scrapValueAdditionMax.Value + 1);
 
+                    // Clamp present value
+                    giftbox.objectInPresentValue = Math.Clamp(giftbox.objectInPresentValue, 0, int.MaxValue);
+                    
                     // Gift Box - Inherit Gift Box Value (if host disables mod behaviors mid-round, above values will be used instead)
                     if (valueSeed.Next(0, 100) < Plugin.scrapValueIsGiftBoxChance.Value)
                         moddedParams.ScrapHasGiftBoxValue = true;
                     
                     moddedParams.ScrapValue = giftbox.objectInPresentValue;
 
-                    // Store Item Extra Spawn Chances \\
+                    // Scrap Item Extra Spawn Chances \\
                     
                     if (giftboxBehaviorSeed.Next(0, 100) < Plugin.scrapSpawn1ExtrasChance.Value)
                         moddedParams.SpawnCount += 1;
@@ -449,26 +498,30 @@ public static class GiftBoxItemPatch
 
                     // Per-Item Config Extra Spawn Chances \\
                     
-                    var scrapConfig = Plugin.perItemConfigs.GetValueOrDefault(scrap);
+                    if (Plugin.perItemConfigs.TryGetValue(scrapRef, out var scrapConfig))
+                    {
+                        if (scrapConfig.ignoreGlobalSpawnExtraChance.Value)
+                            moddedParams.SpawnCount = 1;
 
-                    if (scrapConfig.ignoreGlobalSpawnExtraChance.Value)
-                        moddedParams.SpawnCount = 1;
-
-                    if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn1ExtraChance.Value)
-                        moddedParams.SpawnCount += 1;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn2ExtraChance.Value)
-                        moddedParams.SpawnCount += 2;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn4ExtraChance.Value)
-                        moddedParams.SpawnCount += 4;
-                    
-                    if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn8ExtraChance.Value)
-                        moddedParams.SpawnCount += 8;
+                        if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn1ExtraChance.Value)
+                            moddedParams.SpawnCount += 1;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn2ExtraChance.Value)
+                            moddedParams.SpawnCount += 2;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn4ExtraChance.Value)
+                            moddedParams.SpawnCount += 4;
+                        
+                        if (giftboxBehaviorSeed.Next(0, 100) < scrapConfig.spawn8ExtraChance.Value)
+                            moddedParams.SpawnCount += 8;
+                    }
 
                     return true;
+                }
                 default:
+                {
                     throw new Exception("[Patches.GiftBoxItemPatches.GiftBoxItemPatch.InitGiftboxModdedBehavior] Giftbox Behavior selection failed due to invalid index! This should never happen!");
+                }
             }
 
             // Remove the behavior we just tried from the list of behaviors to try
@@ -489,6 +542,9 @@ public static class GiftBoxItemPatch
         {
             return methodIL;
         }
+
+        // Clear item caches on config reload
+        ClearItemCaches();
 
         giftboxBehaviors[DO_NOTHING] = Plugin.doNothingChance.Value;
         giftboxBehaviors[SPAWN_STORE_ITEM] = Plugin.spawnStoreItemChance.Value;
@@ -517,8 +573,8 @@ public static class GiftBoxItemPatch
 
     public static void NestedGiftboxFun(GiftBoxItem giftbox, GrabbableObject? spawnedObj)
     {
-        // Check if spawned object is nested giftbox
-        if (spawnedObj == null || spawnedObj.itemProperties.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
+        // Return if spawned object is not nested giftbox
+        if (spawnedObj == null || !spawnedObj.itemProperties.LooselyEquals(Plugin.GIFTBOX_ITEM)) return;
 
         // Shrink and rename nested giftbox
         spawnedObj.transform.localScale = giftbox.transform.localScale * 0.925f;
@@ -701,6 +757,8 @@ public static class GiftBoxItemPatch
         return stepper.Instructions;
     }
 
+    // TODO: Fail gracefully for optional patches
+    // TODO: Move RoundManager.Instance.totalScrapValueInLevel += (float)component.scrapValue; after component.SetScrapValue()
     [HarmonyPatch(nameof(GiftBoxItem.OpenGiftBoxServerRpc))]
     [HarmonyPriority(priority: int.MinValue)]
     [HarmonyTranspiler]

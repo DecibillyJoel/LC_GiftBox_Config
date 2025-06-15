@@ -4,27 +4,120 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build LCM project",
-      "command": "dotnet",
-      "type": "shell",
-      "args": [
-        "build",
-        // Ask dotnet build to generate full paths for file names.
-        "/property:GenerateFullPaths=true",
-        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-        "/consoleloggerparameters:NoSummary"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": "$msCompile"
-    },
-    {
       "label": "Dry-run package test",
       "type": "shell",
       "command": "dotnet tool run tcli build --config-path ./artifacts/tspublish/thunderstore.toml",
       "problemMatcher": []
+    },
+    {
+      "label": "build LCM project",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "-c", "${input:Configuration}",
+        "-p:TCLI_Verb=build",
+        // Ask dotnet build to generate full paths for file names.
+        "/property:GenerateFullPaths=true",
+        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "problemMatcher": "$msCompile",
+      "dependsOn": [
+          "clean LCM project"
+      ],
+    },
+    {
+      "label": "clean LCM project",
+      "group": {
+        "kind": "build"
+      },
+      "presentation": {
+        "reveal": "always",
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "problemMatcher": "$msCompile",
+      "dependsOn": [
+          "clean LCM project (Debug)",
+          "clean LCM project (Release)"
+      ],
+    },
+    {
+      "label": "clean LCM project (Debug)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "clean",
+        "-c", "Debug",
+        // Ask dotnet build to generate full paths for file names.
+        "/property:GenerateFullPaths=true",
+        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ],
+      "group": {
+        "kind": "build",
+      },
+      "hide": true,
+      "presentation": {
+        "reveal": "never",
+        "close": true
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      },
+      "problemMatcher": "$msCompile",
+    },
+    {
+      "label": "clean LCM project (Release)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "clean",
+        "-c", "Release",
+        // Ask dotnet build to generate full paths for file names.
+        "/property:GenerateFullPaths=true",
+        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ],
+      "group": {
+        "kind": "build"
+      },
+      "hide": true,
+      "presentation": {
+        "reveal": "never",
+        "close": true
+      },
+      "runOptions": {
+        "instanceLimit": 1,
+      },
+      "problemMatcher": "$msCompile",
     }
+  ],
+  "inputs": [
+      {
+          "id": "Configuration",
+          "description": "Configuration",
+          "type": "pickString",
+          "options": [
+            "Debug",
+            "Release"
+          ],
+          "default": "Debug",
+      },
   ]
 }

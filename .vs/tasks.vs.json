@@ -2,9 +2,47 @@
   "version": "0.2.1",
   "tasks": [
     {
-      "taskName": "Dry-run package test",
-      "type": "shell",
+      "taskLabel": "Dry-run package test",
+      "appliesTo": ".sln",
+      "type": "launch",
       "command": "dotnet tool run tcli build --config-path ./artifacts/tspublish/thunderstore.toml"
+    },
+    {
+      "taskLabel": "build LCM project",
+      "type": "launch",
+      "command": "dotnet",
+      "args": [
+        "publish",
+        "-c", "Debug",
+        "-p:TCLI_Verb=build",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ]
+    },
+    {
+      "taskLabel": "clean LCM project (Debug)",
+      "type": "launch",
+      "command": "dotnet",
+      "args": [
+        "clean",
+        "-c", "Debug",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ]
+    },
+    {
+      "taskLabel": "clean LCM project (Release)",
+      "type": "launch",
+      "command": "dotnet",
+      "args": [
+        "clean",
+        "-c", "Release",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary",
+        "-v", "d"
+      ]
     }
   ]
 }
