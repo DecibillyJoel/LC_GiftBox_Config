@@ -4,8 +4,8 @@ using BepInEx.Logging;
 namespace LCMPublishingTemplate;
 
 /*
-  Here are some basic resources on code style and naming conventions to help
-  you in your first CSharp plugin!
+  Here are some basic resources on code style and naming 
+  conventions to help you in your first CSharp plugin!
 
   https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions
   https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names
