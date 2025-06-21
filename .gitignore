@@ -221,6 +221,7 @@ node_modules/
 *.sln.iml
 
 # End of https://www.toptal.com/developers/gitignore/api/csharp
+<<<<<<< HEAD
 artifacts/tspublish/build/*
 artifacts/tspublish/build/**/*
 artifacts/tspublish/dist/*
@@ -234,3 +235,8 @@ libs/**/*.dll
 libs/**/*.zip
 
 !**/.gitkeep
+=======
+**/artifacts/*.*
+**/artifacts/**/*.*
+!**/.gitkeep
+>>>>>>> upstream/main

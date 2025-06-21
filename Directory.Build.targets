@@ -1,4 +1,7 @@
 <Project>
+  <!-- 
+    Targets for source C# projects
+  -->
 
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
     <PackageReference
@@ -8,24 +11,24 @@
     />
   </ItemGroup>
 
-  <Target Name="AddGeneratedFile" BeforeTargets="AfterClean;BeforeBuild;BeforeCompile;CoreCompile;BeforeResolveReference"
-      Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)BepPluginInfo.cs">
+  <Target Name="AddGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile"
+      Outputs="$(IntermediateOutputPath)LCMProjectInfo.cs">
 
     <PropertyGroup>
-      <BepPluginGuid Condition="'$(BepPluginGuid)' == ''">$(AssemblyName)</BepPluginGuid>
-      <BepPluginName Condition="'$(BepPluginName)' == ''">$(Product)</BepPluginName>
-      <BepPluginTsTeam Condition  ="'$(BepPluginTsTeam)' == ''">$(TsTeam)</BepPluginTsTeam>
-      <BepPluginVersion Condition="'$(BepPluginVersion)' == ''">$(Version)</BepPluginVersion>
+      <LCMProjectGuid Condition="'$(LCMProjectGuid)' == ''">$(AssemblyName)</LCMProjectGuid>
+      <LCMProjectName Condition="'$(LCMProjectName)' == ''">$(Product)</LCMProjectName>
+      <LCMProjectAuthors Condition="'$(LCMProjectAuthors)' == ''">$(Authors)</LCMProjectAuthors>
+      <LCMProjectVersion Condition="'$(LCMProjectVersion)' == ''">$(Version)</LCMProjectVersion>
       <GeneratedText><![CDATA[
-internal static class BepPluginInfo
+internal static class LCMProjectInfo
 {
-  public const string PLUGIN_GUID = "$(BepPluginGuid)"%3B
-  public const string PLUGIN_NAME = "$(BepPluginName)"%3B
-  public const string PLUGIN_TS_TEAM = "$(BepPluginTsTeam)"%3B
-  public const string PLUGIN_VERSION = "$(BepPluginVersion)"%3B
+  public const string PROJECT_GUID = "$(LCMProjectGuid)"%3B
+  public const string PROJECT_NAME = "$(LCMProjectName)"%3B
+  public const string PROJECT_AUTHORS = "$(LCMProjectAuthors)"%3B
+  public const string PROJECT_VERSION = "$(LCMProjectVersion)"%3B
 }
 ]]></GeneratedText>
-      <GeneratedFilePath>$(IntermediateOutputPath)BepPluginInfo.cs</GeneratedFilePath>
+      <GeneratedFilePath>$(IntermediateOutputPath)LCMProjectInfo.cs</GeneratedFilePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -37,26 +40,4 @@ internal static class BepPluginInfo
         WriteOnlyWhenDifferent="true" Overwrite="true" />
 
   </Target>
-
-  <Target Name="CleanThunderstoreArtifacts" AfterTargets="Clean;">
-    <RemoveDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\build" />
-    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\build" />
-    <WriteLinesToFile 
-      File="$(MSBuildThisFileDirectory)\artifacts\tspublish\build\.gitkeep" 
-    />
-    <RemoveDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist" />
-    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist" />
-    <MakeDir Directories="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist\plugins" />
-    <WriteLinesToFile 
-      File="$(MSBuildThisFileDirectory)\artifacts\tspublish\dist\plugins\.gitkeep" 
-    />
-  </Target>
-
-  <Target Name="MakeLibDebugTSPublish" AfterTargets="Publish;" Condition="'$(SolutionDir)' == '$(MSBuildThisFileDirectory)' And '$(Configuration)' == 'Debug'">
-    <ItemGroup>
-      <LibsToBuild Include="$(SolutionDir)\libs\**\*.csproj" />
-    </ItemGroup>
-    <Exec Command='dotnet publish "%(LibsToBuild.FullPath)" -c Debug -p:TCLI_Verb=build -p:GenerateFullPaths=true -p:SolutionDir="$(SolutionDir)\." -p:TCLI_PackageDir="$(SolutionDir)\libs\%(LibsToBuild.Filename)\." -v m'/>
-  </Target>
-
 </Project>

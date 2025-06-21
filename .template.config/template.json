@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "RobynLlama",
+  "classifications": [
+    "Common",
+    "Code"
+  ],
+  "defaultName": "My_LethalCompany_Mod",
+  "forms": {
+    "onlyPrintableCharacters": {
+      "identifier": "replace",
+      "pattern": "[^\\x00-\\x7F]",
+      "replacement": ""
+    },
+    "onlyURLCharacters": {
+      "identifier": "replace",
+      "pattern": "[^\\w\\.:/\\-+!*'\\(\\)?%=&]",
+      "replacement": ""
+    },
+    "onlyWordCharacters": {
+      "identifier": "replace",
+      "pattern": "[^\\w]",
+      "replacement": ""
+    },
+    "onlyWordCharactersAndDot": {
+      "identifier": "replace",
+      "pattern": "[^\\w\\.]",
+      "replacement": ""
+    }
+  },
+  "identity": "dev.mamallama.templates.lcm.tspublishing",
+  "name": "Lethal Company Modding Template + Thunderstore Publishing",
+  "shortName": "LCM_TS_Publishing",
+  "sourceName": "LCMPublishingTemplate",
+  "sources": [
+    {
+      "copyOnly": [
+        ".git/**"
+      ]
+    }
+  ],
+  "postActions": [
+    {
+      "actionId": "3A7C4B45-1F5D-4A30-959A-51B88E82B5D2",
+      "args": {
+        "executable": "dotnet",
+        "args": "msbuild \"-t:Thunderstore Packager\\ThunderstorePackager:OnTemplateInstall\"",
+        "redirectStandardOutput": false,
+        "redirectStandardError": false
+      },
+      "manualInstructions": [{
+        "text": "Run 'dotnet msbuild \"-t:Thunderstore Packager\\ThunderstorePackager:OnTemplateInstall\"' in terminal"
+      }],
+      "continueOnError": true,
+      "description": "Sets the template as upstream and the package repo as origin"
+    }
+  ],
+  "symbols": {
+    "PackageNAME": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "MyModName",
+      "description": "The name of this package",
+      "forms": {
+        "global": [
+          "onlyWordCharacters"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_NAME__",
+      "type": "parameter"
+    },
+    "PackageAUTHOR": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "MyAuthorName",
+      "description": "The author of this package. Copy this from your Thunderstore team name for publishing",
+      "forms": {
+        "global": [
+          "onlyWordCharacters"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_AUTHOR__",
+      "type": "parameter"
+    },
+    "PackageDESC": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "This is a mod description, 250 characters max!",
+      "description": "A short description of your mod, 250 characters max",
+      "forms": {
+        "global": [
+          "onlyPrintableCharacters"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_DESC__",
+      "type": "parameter"
+    },
+    "PackageGUID": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "com.github.me.packagename",
+      "description": "The GUID of your package used by BepinEx for dependencies",
+      "forms": {
+        "global": [
+          "onlyWordCharactersAndDot"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_GUID__",
+      "type": "parameter"
+    },
+    "PackageURL": {
+      "datatype": "string",
+      "defaultIfOptionWithoutValue": true,
+      "defaultValue": "https://github.com/LethalCompanyModding/LCM-Template-TSPublishing",
+      "description": "A link to your github repository for this mod",
+      "forms": {
+        "global": [
+          "onlyURLCharacters"
+        ]
+      },
+      "isRequired": true,
+      "replaces": "__PACKAGE_URL__",
+      "type": "parameter"
+    }
+  },
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

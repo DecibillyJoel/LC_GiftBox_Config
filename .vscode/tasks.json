@@ -1,123 +1,99 @@
 {
-  // See https://go.microsoft.com/fwlink/?LinkId=733558
-  // for the documentation about the tasks.json format
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Dry-run package test",
-      "type": "shell",
-      "command": "dotnet tool run tcli build --config-path ./artifacts/tspublish/thunderstore.toml",
-      "problemMatcher": []
-    },
-    {
-      "label": "build LCM project",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "publish",
-        "-c", "${input:Configuration}",
-        "-p:TCLI_Verb=build",
-        // Ask dotnet build to generate full paths for file names.
-        "/property:GenerateFullPaths=true",
-        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-        "/consoleloggerparameters:NoSummary",
-        "-v", "d"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "reveal": "always"
-      },
-      "runOptions": {
-        "instanceLimit": 1
-      },
-      "problemMatcher": "$msCompile",
-      "dependsOn": [
-          "clean LCM project"
-      ],
-    },
-    {
-      "label": "clean LCM project",
-      "group": {
-        "kind": "build"
-      },
-      "presentation": {
-        "reveal": "always",
-      },
-      "runOptions": {
-        "instanceLimit": 1
-      },
-      "problemMatcher": "$msCompile",
-      "dependsOn": [
-          "clean LCM project (Debug)",
-          "clean LCM project (Release)"
-      ],
-    },
-    {
-      "label": "clean LCM project (Debug)",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "clean",
-        "-c", "Debug",
-        // Ask dotnet build to generate full paths for file names.
-        "/property:GenerateFullPaths=true",
-        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-        "/consoleloggerparameters:NoSummary",
-        "-v", "d"
-      ],
-      "group": {
-        "kind": "build",
-      },
-      "hide": true,
-      "presentation": {
-        "reveal": "never",
-        "close": true
-      },
-      "runOptions": {
-        "instanceLimit": 1
-      },
-      "problemMatcher": "$msCompile",
-    },
-    {
-      "label": "clean LCM project (Release)",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "clean",
-        "-c", "Release",
-        // Ask dotnet build to generate full paths for file names.
-        "/property:GenerateFullPaths=true",
-        // Do not generate summary otherwise it leads to duplicate errors in Problems panel
-        "/consoleloggerparameters:NoSummary",
-        "-v", "d"
-      ],
-      "group": {
-        "kind": "build"
-      },
-      "hide": true,
-      "presentation": {
-        "reveal": "never",
-        "close": true
-      },
-      "runOptions": {
-        "instanceLimit": 1,
-      },
-      "problemMatcher": "$msCompile",
-    }
-  ],
-  "inputs": [
-      {
-          "id": "Configuration",
-          "description": "Configuration",
-          "type": "pickString",
-          "options": [
-            "Debug",
-            "Release"
-          ],
-          "default": "Debug",
-      },
-  ]
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			// Publishes the mod to Thunderstore
+			"label": "dotnet: publish",
+			"command": "dotnet",
+			"type": "shell",
+			"args": [
+				"publish",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"presentation": {
+				"echo": false,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"problemMatcher": []
+		},
+		{
+			// Performs Thunderstore CLI dry-run
+			"label": "tcli: Dry-run package test",
+			"type": "shell",
+			"command": "dotnet tool run tcli build --config-path ./ThunderstorePackage/thunderstore.toml",
+			"problemMatcher": []
+		},
+		{
+			// Adds a git submodule to the project
+			"label": "dotnet: Add reference (git submodule)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"msbuild",
+				"-t:Thunderstore Packager\\ThunderstorePackager:AddGitSubmodule",
+				"-p:GitSubmoduleUrl=${input:gitSubmoduleUrl}",
+				"-p:GitSubmoduleDirName=${input:gitSubmoduleDirName}",
+				"-p:GitSubmoduleProjRefType=${input:gitSubmoduleProjRefType}"
+			],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			// Removes a git submodule from the project
+			"label": "dotnet: Remove reference (git submodule)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"msbuild",
+				"-t:Thunderstore Packager\\ThunderstorePackager:RemoveGitSubmodule",
+				"-p:GitSubmoduleDirName=${input:gitSubmoduleDirName}",
+				"-p:GitSubmoduleProjRefType=${input:gitSubmoduleProjRefType}"
+			],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			// Configure dotnet build as the default build task
+			"type": "dotnet",
+			"task": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": "$msCompile",
+			"label": "dotnet: build"
+		}
+	],
+	"inputs": [
+		// Inputs for task dotnet: Add/Remove reference (git submodule)
+		{
+			"id": "gitSubmoduleUrl",
+			"type": "promptString",
+			"description": "Enter the Git submodule URL"
+		},
+		{
+			"id": "gitSubmoduleDirName",
+			"type": "promptString",
+			"description": "Enter the submodule directory name"
+		},
+		{
+			"id": "gitSubmoduleProjRefType",
+			"type": "pickString",
+			"description": "Select the project reference type",
+			"options": [
+				"src",
+				"lib"
+			],
+			"default": "src"
+		}
+	]
 }

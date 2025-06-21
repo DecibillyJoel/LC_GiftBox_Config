@@ -1,0 +1,50 @@
+<!-- Don't change anything in here -->
+<Project>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+        <IsTSPackager>True</IsTSPackager>
+        <ArtifactsPivots>\</ArtifactsPivots>
+    </PropertyGroup>
+    
+    <!-- 
+        Simply sets all .csproj and .proj as project refs 
+        so that this project is last in the build order
+    -->
+    <ItemGroup>
+        <Reference Remove="**\*" />
+        <PackageReference Remove="**\*" />
+        <ProjectReference Remove="**\*" />
+        
+        <ProjectReference Include="$(PackageDir)**\*.csproj"
+            Private="false"
+            PrivateAssets="all"
+            IncludeAssets=""
+            ExcludeAssets="all"
+            ReferenceOutputAssembly="false"
+            SkipGetTargetFrameworkProperties="true"
+        />
+        <ProjectReference Include="$(PackageDir)**\*.proj"
+            Private="false"
+            PrivateAssets="all"
+            IncludeAssets=""
+            ExcludeAssets="all"
+            ReferenceOutputAssembly="false"
+            SkipGetTargetFrameworkProperties="true"
+        />
+        <ProjectReference Remove="$(MSBuildThisFileFullPath)" />
+    </ItemGroup>
+
+    <!-- This property ensures that dotnet publish does not call Build, which is important -->
+    <PropertyGroup>
+        <NoBuild>true</NoBuild>
+    </PropertyGroup>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+    <Target Name="_CheckForBuildWithNoBuild" DependsOnTargets="" />
+    <Target Name="CreateManifestResourceNames" DependsOnTargets="" />
+    <Target Name="CoreCompile" DependsOnTargets="" />
+    <Target Name="CopyFilesToOutputDirectory" DependsOnTargets="" />
+    <Target Name="ComputeAndCopyFilesToPublishDirectory" DependsOnTargets="" />
+</Project>

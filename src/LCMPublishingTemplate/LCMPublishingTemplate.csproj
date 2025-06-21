@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 
+      $(MSBuildProjectName) = this .csproj filename (without the extension)
+      $(PackageName) and other TS package props are defined in Directory.Build.props
+      You shouldn't have to change these, but you could if you wanted to.
+    -->
+    <Product>$(MSBuildProjectName)</Product>
+    <AssemblyName>$(PackageGUID)</AssemblyName>
+    <Authors>$(PackageAuthor)</Authors>
+    <Description>$(PackageDesc)</Description>
+    <Version>$(PackageVersion)</Version>
+    <!--
+      "plugin" = BepInEx plugin; exports assets to dist/plugins during publishing
+      "patcher" = BepInEx preloader; exports assets to dist/patchers during publishing
+      "" = custom file structure; exports assets to dist/ during publishing
+    -->
+    <BepTypePluginOrPatcher>plugin</BepTypePluginOrPatcher>
+    <!-- 
+      You shouldn't have to change these, but you could if you wanted to.
+    -->
+    <ProjectDepsFileName>$(Product).deps.json</ProjectDepsFileName>
+    <RootNamespace>$(Product)</RootNamespace>
+    <TargetName>$(Product)</TargetName>
+    <!-- 
+      Don't change these 
+    -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <IsTSPackager>False</IsTSPackager>
+    <ArtifactsPivots>$(ArtifactsPivots)$(BepTypePluginOrPatcher.ToLower())s\</ArtifactsPivots>
+  </PropertyGroup>
+  <ItemGroup>
+    <!--
+      References specifically for this .csproj. For references you want available to
+      all .csproj, add them to Directory.Build.props instead.
+      
+      When adding additional references, ensure you use <Private>false</Private> to
+      ensure the DLL is explicitly NOT copied to the output directory. This is because
+      the DLLs are already included in the game and will be loaded from there.
+      (NOTE: Use <PrivateAssets>all</PrivateAssets> for PackageReferences instead)
+
+      Further, if the DLL is not included as part of the game, you should be using a
+      Dependency in your thunderstore.toml file to ensure the DLL is available to the
+      game when your mod is loaded.
+
+      Assembly Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
+      Project Example: <ProjectReference Include="$(PackageDir)src\MyProject\MyProject.csproj" Private="false" />
+      NuGet Example: <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+      Thunderstore Example: <PackageReference Include="Evaisa-LethalLib" Version="0.16.1" PrivateAssets="all" />
+    -->
+  </ItemGroup>
+</Project>

@@ -1,0 +1,151 @@
+<Project>
+    <!--
+        Runs on template install to set the template as upstream and the package repo as origin
+    -->
+    <Target Name="OnTemplateInstall">
+        <!-- Use git config value to get the template URL -->
+        <Exec
+            Command='git config --get remote.origin.url'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        >
+            <Output TaskParameter="ConsoleOutput" PropertyName="OriginUrl" />
+        </Exec>
+
+        <!-- Ensure OriginUrl is acquired successfully and is not the Repo Url -->
+        <Error Condition="'$(OriginUrl)' == ''" Text="Failed to acquire Origin URL!" />
+        <Error Condition="'$(OriginUrl)' == '$(RepositoryUrl)'" Text="Repo is already origin!" />
+
+        <!-- Remove the template as the origin -->
+        <Exec
+            Command='git remote remove origin'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)" 
+        />
+
+        <!-- Add the repo as the origin -->
+        <Exec
+            Command='git remote add origin "$(RepositoryUrl)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+
+        <!-- Remove upstream if one exists -->
+        <Exec
+            Command='git remote remove upstream'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+            ContinueOnError="WarnAndContinue"
+        />
+
+        <!-- Add the template as the upstream -->
+        <Exec
+            Command='git remote add upstream "$(OriginUrl)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+            ContinueOnError="WarnAndContinue"
+        />
+
+        <!-- Perform dotnet restore -->
+        <Exec
+            Command='dotnet restore'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+            ContinueOnError="WarnAndContinue"
+        />
+
+        <!-- Perform tool restore -->
+        <Exec
+            Command='dotnet tool restore'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+            ContinueOnError="WarnAndContinue"
+        />
+    </Target>
+
+    <!-- 
+        Adds a git submodule to the src/ or lib/ folder
+    -->
+    <Target Name="AddGitSubmodule">
+        <!-- Parameter validation -->
+        <Error Condition="'$(GitSubmoduleUrl)' == ''" Text="Submodule URL is required!" />
+        <Error Condition="'$(GitSubmoduleDirName)' == ''" Text="Submodule Directory Name is required!" />
+        <Error Condition="'$(GitSubmoduleProjRefType)' != 'src' And '$(GitSubmoduleProjRefType)' != 'lib'" Text="Submodule project reference type must be defined as either 'src' or 'lib'!" />
+        <Error Condition="Exists('$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)')" Text="A directory with the given Submodule Directory Name already exists!" />
+
+        <!-- Register submodule -->
+        <Exec 
+            Command='git submodule add -f "$(GitSubmoduleUrl)" "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+
+        <!-- Fetch submodule recursively -->
+        <Exec 
+            Command='git submodule update --init --remote --recursive "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+
+        <!-- Collect well structured project files -->
+        <ItemGroup>
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.proj" />
+        </ItemGroup>
+
+        <!-- If proj ref type is src, set solution folder behavior to root -->
+        <!-- If proj ref type is lib, set solution folder to "Libraries\"-->
+        <PropertyGroup>
+            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'src'">--in-root</SolutionFolderBehavior>
+            <SolutionFolderBehavior Condition="'$(GitSubmoduleProjRefType)' == 'lib'">--solution-folder "\\Libraries\\$(GitSubmoduleDirName)\\"</SolutionFolderBehavior>
+        </PropertyGroup>
+
+        <!-- Add submodule to the solution (src) -->
+        <Exec 
+            Condition="'%(GitSubmoduleProjectFiles.FullPath)' != ''"
+            Command='dotnet sln add $(SolutionFolderBehavior) "%(GitSubmoduleProjectFiles.FullPath)"' 
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+    </Target>
+
+    <!--
+        Removes a git submodule from the src/ or lib/ folder
+    -->
+    <Target Name="RemoveGitSubmodule">
+        <!-- Parameter validation -->
+        <Error Condition="'$(GitSubmoduleDirName)' == ''" Text="Submodule Directory Name is required!" />
+        <Error Condition="'$(GitSubmoduleProjRefType)' != 'src' And '$(GitSubmoduleProjRefType)' != 'lib'" Text="Submodule project reference type must be defined as either 'src' or 'lib'!" />
+        <Error Condition="!Exists('$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)')" Text="A directory with the given Submodule Directory Name does not exist!" />
+
+        <!-- Collect project files -->
+        <ItemGroup>
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.csproj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.proj" />
+        </ItemGroup>
+
+        <!-- Remove submodule from the solution -->
+        <Exec 
+            Condition="'%(GitSubmoduleProjectFiles.FullPath)' != ''"
+            Command='dotnet sln remove "%(GitSubmoduleProjectFiles.FullPath)"' 
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+
+        <!-- Remove submodule -->
+        <Exec 
+            Command='git submodule deinit -f "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+        <Exec 
+            Command='git rm -f "$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)"'
+            ConsoleToMSBuild="true"
+            WorkingDirectory="$(PackageDir)"
+        />
+    </Target>
+</Project>
