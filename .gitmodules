@@ -4,3 +4,9 @@
 [submodule "libs/LCUtils"]
 	path = libs/LCUtils
 	url = https://github.com/Decibillyjoel/LCUtils
+[submodule "lib/ILUtils"]
+	path = lib/ILUtils
+	url = https://github.com/DecibillyJoel/ILUtils
+[submodule "lib/LCUtils"]
+	path = lib/LCUtils
+	url = https://github.com/DecibillyJoel/LCUtils

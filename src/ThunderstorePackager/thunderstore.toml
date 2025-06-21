@@ -5,12 +5,15 @@
 [package]
   #Edit these in Directory.Build.props instead, the workflow will automate copying
   #it here for you
-  description="__PACKAGE_DESC__"
-  websiteUrl="__PACKAGE_URL__"
+  description="Configure gift boxes / presents, such as having store items / scrap / another present / nothing, weighting of item selection, spawn rates, etc."
 
   #Change this to true if your mod has any NSFW content. Please follow the rules
   #on image and text content on your listing or your package may be removed
   containsNsfwContent=false
+
+  #This is the link that shows up in the top right of the package page
+  #while it can be anything, I suggest keeping it as your github
+  websiteUrl="https://github.com/DecibillyJoel/LC_GiftBox_Config"
 
   #This is where you put in dependencies in the format
   #DependencyNamespace-ModName = "version.number.here"

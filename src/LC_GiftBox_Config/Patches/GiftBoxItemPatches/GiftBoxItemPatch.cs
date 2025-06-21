@@ -1,17 +1,17 @@
-using UnityEngine;
 using System;
-using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+
+using UnityEngine;
 using Unity.Netcode;
 using StaticNetcodeLib;
+using HarmonyLib;
 using ILUtils;
 using ILUtils.HarmonyXtensions;
 using LCUtils;
 
-using LogLevel = BepInEx.Logging.LogLevel;
 using Object = UnityEngine.Object;
 using OpCodes = System.Reflection.Emit.OpCodes;
 using Random = System.Random;
@@ -186,7 +186,7 @@ public static class GiftBoxItemPatch
     #region Cache Management
         public static void ClearItemCaches()
         {
-            Plugin.Log(LogLevel.Debug, "Clearing item caches");
+            Plugin.LogDebug("Clearing item caches");
 
             _storeItemsAndWeights = null;
             _scrapItemsAndWeights = null;
@@ -441,7 +441,7 @@ public static class GiftBoxItemPatch
                         var scrapItemsAndWeights = GetScrapItemsAndWeightsWithConfigRolls(giftboxBehaviorSeed);
 
                         scrapItemsAndWeights.Do(keyAndValue => {
-                            Plugin.Log(LogLevel.Debug, $"SHOOBEDOOP: {keyAndValue.Key.configName} = {keyAndValue.Key.Item} = {keyAndValue.Value}");
+                            Plugin.LogDebug($"SHOOBEDOOP: {keyAndValue.Key.configName} = {keyAndValue.Key.Item} = {keyAndValue.Value}");
                         });
 
                         scrapRef = Probability.GetRandomPairFromWeightedValues(scrapItemsAndWeights, giftboxBehaviorSeed)?.key;
@@ -586,7 +586,7 @@ public static class GiftBoxItemPatch
         if (giftboxNode != null && spawnedObjNode != null)
         {
             spawnedObjNode.headerText = "Nested " + giftboxNode.headerText;
-        } else Plugin.Log(LogLevel.Warning, "Failed to prepare nested giftbox scan node :(");
+        } else Plugin.LogWarning("Failed to prepare nested giftbox scan node :(");
     }
 
     public static bool OverrideOpenGiftBox(GiftBoxItem giftbox)
@@ -721,7 +721,7 @@ public static class GiftBoxItemPatch
             Transform parent = giftbox.isInElevator ? StartOfRound.Instance.elevatorTransform : RoundManager.Instance.mapPropsContainer.transform;
             Object.Instantiate(EGGSPLOSION, giftbox.transform.position, Quaternion.identity, parent);
         } 
-        else Plugin.Log(LogLevel.Warning, "EGGSPLOSION VFX not found!");
+        else Plugin.LogWarning("EGGSPLOSION VFX not found!");
 
         if (EGGPOP != null) 
         {
@@ -729,7 +729,7 @@ public static class GiftBoxItemPatch
             WalkieTalkie.TransmitOneShotAudio(giftbox.presentAudio, EGGPOP, vol: 0.67f);
             RoundManager.Instance.PlayAudibleNoise(giftbox.presentAudio.transform.position, noiseRange: 15f, noiseLoudness: 0.67f, timesPlayedInSameSpot: 1, noiseIsInsideClosedShip: giftbox.isInShipRoom && StartOfRound.Instance.hangarDoorsClosed);
         }
-        else Plugin.Log(LogLevel.Warning, "EGGSPLOSION SFX not found!");
+        else Plugin.LogWarning("EGGSPLOSION SFX not found!");
     }
 
     [HarmonyPatch(nameof(GiftBoxItem.waitForGiftPresentToSpawnOnClient), MethodType.Enumerator)]

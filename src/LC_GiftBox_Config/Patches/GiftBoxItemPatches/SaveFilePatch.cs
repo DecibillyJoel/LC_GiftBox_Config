@@ -20,19 +20,19 @@ internal static class SaveFilePatch
     
     internal static Dictionary<int, GiftBoxModdedParams> GetGiftBoxModdedParamsDict()
     {
-        Plugin.Log($"ES3 Key exists: {ES3.KeyExists(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName)}");
+        // Plugin.LogDebug($"ES3 Key exists: {ES3.KeyExists(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName)}");
         if (!ES3.KeyExists(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName)) return [];
 
-        ES3.Load<Dictionary<int, GiftBoxModdedParams>>(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName).Do(keypair => Plugin.Log($"\t{keypair.Key} {keypair.Value}"));
+        // ES3.Load<Dictionary<int, GiftBoxModdedParams>>(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName).Do(keypair => Plugin.LogDebug($"\t{keypair.Key} {keypair.Value}"));
         return ES3.Load<Dictionary<int, GiftBoxModdedParams>>(GiftBoxModdedParamsSaveKey, GameNetworkManager.Instance.currentSaveFileName);
     }
 
     internal static void LoadGiftBoxModdedParams(Dictionary<int, GiftBoxModdedParams> dict, int index, GrabbableObject grabbable)
     {
-        Plugin.Log($"Dict Key [{index}] exists: {dict.ContainsKey(index)}");
+        // Plugin.LogDebug($"Dict Key [{index}] exists: {dict.ContainsKey(index)}");
         if (!dict.ContainsKey(index)) return;
 
-        Plugin.Log($"\t[{index}] {dict[index]}");
+        // Plugin.LogDebug($"\t[{index}] {dict[index]}");
         grabbable.gameObject.AddComponent<GiftBoxModdedBehavior>().Params = dict[index];
     }
 

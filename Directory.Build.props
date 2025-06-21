@@ -2,12 +2,12 @@
   <!-- TS Package Props -->
   <PropertyGroup>
     <PackageDir>$(MSBuildThisFileDirectory)</PackageDir>
-    <PackageName>__PACKAGE_NAME__</PackageName>
-    <PackageAuthor>__PACKAGE_AUTHOR__</PackageAuthor>
-    <PackageDesc>__PACKAGE_DESC__</PackageDesc>
-    <PackageGUID>__PACKAGE_GUID__</PackageGUID>
-    <PackageUrl>__PACKAGE_URL__</PackageUrl>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageName>LC_GiftBox_Config</PackageName>
+    <PackageAuthor>DBJ</PackageAuthor>
+    <PackageDesc>Configure gift boxes / presents, such as having store items / scrap / another present / nothing, weighting of item selection, spawn rates, etc.</PackageDesc>
+    <PackageGUID>com.github.decibillyjoel.lc_giftbox_config</PackageGUID>
+    <PackageUrl>https://github.com/DecibillyJoel/LC_GiftBox_Config</PackageUrl>
+    <PackageVersion>1.3.0</PackageVersion>
     <PackageVersion Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</PackageVersion>
     <IsTSPackager>False</IsTSPackager>
   </PropertyGroup>
@@ -35,7 +35,7 @@
   <PropertyGroup>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <PathMap>$([System.IO.Path]::GetFullPath('$(PackageDir)'))=./</PathMap>
+    <PathMap>$([System.IO.Path]::GetFullPath('$(SolutionDir)'))=./</PathMap>
   </PropertyGroup>
   <!--
       References that will be available to all .csproj. For references you want available to

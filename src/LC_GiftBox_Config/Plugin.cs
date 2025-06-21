@@ -1,29 +1,52 @@
 ﻿using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
 
 using LCUtils;
-using System.Collections.Generic;
-
-using LogLevel = BepInEx.Logging.LogLevel;
 
 namespace LC_GiftBox_Config;
 
-[BepInPlugin(BepPluginInfo.PLUGIN_GUID, $"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}", BepPluginInfo.PLUGIN_VERSION)]
+[BepInPlugin(LCMProjectInfo.PROJECT_GUID, $"{LCMProjectInfo.PROJECT_AUTHORS}.{LCMProjectInfo.PROJECT_NAME}", LCMProjectInfo.PROJECT_VERSION)]
 [BepInDependency(StaticNetcodeLib.StaticNetcodeLib.Guid, BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency(LCUtils.Plugin.PLUGIN_GUID, BepInDependency.DependencyFlags.HardDependency)]
 [BepInDependency(ILUtils.Plugin.PLUGIN_GUID, BepInDependency.DependencyFlags.HardDependency)]
 
 public class Plugin : BaseUnityPlugin
 {
-    public const string PLUGIN_GUID = BepPluginInfo.PLUGIN_GUID;
-    public const string PLUGIN_NAME = BepPluginInfo.PLUGIN_NAME;
-    public const string PLUGIN_VERSION = BepPluginInfo.PLUGIN_VERSION;
-    public const string PLUGIN_TS_TEAM = BepPluginInfo.PLUGIN_TS_TEAM;
+    #region Plugin Info
+    /*
+      Here, we make the plugin instance and info accessible anywhere
+    */
+    
+    public static Plugin Instance { get; private set; } = null!;
+    public const string PLUGIN_GUID = LCMProjectInfo.PROJECT_GUID;
+    public const string PLUGIN_NAME = LCMProjectInfo.PROJECT_NAME;
+    public const string PLUGIN_AUTHORS = LCMProjectInfo.PROJECT_AUTHORS;
+    public const string PLUGIN_VERSION = LCMProjectInfo.PROJECT_VERSION;
+  #endregion
 
-    public static ManualLogSource PluginLogger = null!;
+  #region Log Methods
+    /* 
+      BepInEx makes you a ManualLogSource for free called "Logger"
+      that is accessed via the BaseUnityPlugin instance. Your plugin's
+      code can find it by using Plugin.Instance.Logger.
+
+      For convenience, we define static logging functions here so that
+      the logger's functions can be called via Plugin.LogInfo(...),
+      Plugin.LogDebug(...), Plugin.Log(...), etc.
+    */
+  
+    public static void Log(LogLevel level, object data) => Instance.Logger.Log(level, data);
+    public static void LogFatal(object data) => Instance.Logger.LogFatal(data);
+    public static void LogError(object data) => Instance.Logger.LogError(data);
+    public static void LogWarning(object data) => Instance.Logger.LogWarning(data);
+    public static void LogMessage(object data) => Instance.Logger.LogMessage(data);
+    public static void LogInfo(object data) => Instance.Logger.LogInfo(data);
+    public static void LogDebug(object data) => Instance.Logger.LogDebug(data);
+  #endregion
 
     public const int GIFTBOX_ITEM_ID = 152767;
     public static PersistentItemReference GIFTBOX_ITEM {get; private set;} = null!;
@@ -116,29 +139,19 @@ public class Plugin : BaseUnityPlugin
     }
     public static Dictionary<PersistentItemReference, PerItemConfig> perItemConfigs = [];
 
-    internal static readonly Harmony harmony = new($"{BepPluginInfo.PLUGIN_TS_TEAM}.{BepPluginInfo.PLUGIN_NAME}");
-
-    public static void Log(LogLevel logLevel, string logMessage)
-    {
-        PluginLogger.Log(logLevel, $"{logMessage}");
-    }
-
-    public static void Log(string logMessage)
-    {
-        Log(LogLevel.Info, logMessage);
-    }
+    internal static readonly Harmony harmony = new($"{PLUGIN_AUTHORS}.{PLUGIN_NAME}");
 
     private void ValidateMinMaxOrder(ConfigEntry<int> minEntry, ConfigEntry<int> maxEntry) 
     {
         if (minEntry.Value > maxEntry.Value) {
-            Log(LogLevel.Warning, $"|{minEntry.Definition.Key}| is greater than |{maxEntry.Definition.Key}! Swapping values...");
+            LogWarning($"|{minEntry.Definition.Key}| is greater than |{maxEntry.Definition.Key}! Swapping values...");
             (minEntry.Value, maxEntry.Value) = (maxEntry.Value, minEntry.Value);
         }
     }
 
     private void ValidateConfigAndApplyPatches()
     {
-        Log(LogLevel.Debug, "Validating config...");
+        LogDebug("Validating config...");
 
         // Cancel any scheduled validations since we're already validating
         CancelInvoke(nameof(ValidateConfigAndApplyPatches));
@@ -149,7 +162,7 @@ public class Plugin : BaseUnityPlugin
 
         // Warn if all behavior weights are 0
         if (spawnStoreItemChance.Value == 0 && spawnScrapChance.Value == 0 && giftboxRecursionChance.Value == 0 && spawnNothingChance.Value == 0 && doNothingChance.Value == 0) {
-            Log(LogLevel.Warning, $"All [{doNothingChance.Definition.Section}] config weights are 0! This will cause the gift box to always be unmodified! Please set at least one of the weights to a non-zero value!");
+            LogWarning($"All [{doNothingChance.Definition.Section}] config weights are 0! This will cause the gift box to always be unmodified! Please set at least one of the weights to a non-zero value!");
         }
 
         // Validate min/max order for all global settings
@@ -184,19 +197,19 @@ public class Plugin : BaseUnityPlugin
 
         // Harmony Repatch \\
 
-        Log(LogLevel.Debug, "Unpatching...");
+        LogDebug("Unpatching...");
         harmony.UnpatchSelf();
 
-        Log(LogLevel.Debug, "Patching...");
+        LogDebug("Patching...");
         try{
             harmony.PatchAll();
         } catch (Exception e) {
-            Log(LogLevel.Error, $"Patching failed! Unpatching! Exception:\n{e}");
+            LogError($"Patching failed! Unpatching! Exception:\n{e}");
             
             harmony.UnpatchSelf();
         }
 
-        Log(LogLevel.Debug, "Finished config validation and patching!");
+        LogDebug("Finished config validation and patching!");
     }
 
     private void ScheduleValidateConfigAndApplyPatches(object? eventSender = null, SettingChangedEventArgs? eventArgs = null)
@@ -210,7 +223,7 @@ public class Plugin : BaseUnityPlugin
     {
         // Skip if missing spawnPrefab or GrabbableObject
         if (itemRef.GrabbableObject == null) {
-            Log(LogLevel.Debug, $"Skipping registration of item [{itemRef.configName}] due to missing a spawnPrefab or GrabbableObject component!");
+            LogDebug($"Skipping registration of item [{itemRef.configName}] due to missing a spawnPrefab or GrabbableObject component!");
             return;
         };
 
@@ -245,8 +258,11 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
-        PluginLogger = Logger;
-        Log($"[v{BepPluginInfo.PLUGIN_VERSION}] Loading...");
+        // Here we assign the static value pointing to the Plugin instance
+        Instance = this;
+
+        // Log our awake here so we can see it in LogOutput.txt file
+        LogInfo($"[v{PLUGIN_VERSION}] Loading...");
 
         // Init config file for items
         ItemConfig = new($"{Config.ConfigFilePath[..^4]}.Items.cfg", saveOnInit: true, ownerMetadata: Info.Metadata);
@@ -376,7 +392,7 @@ public class Plugin : BaseUnityPlugin
 
         ValidateConfigAndApplyPatches();
 
-        Log($"[v{BepPluginInfo.PLUGIN_VERSION}] Finished loading!");
+        LogInfo($"[v{PLUGIN_VERSION}] Finished loading!");
     }
 
     private void MigrateOldEntries(params (string oldSection, string oldKey, ConfigEntryBase newEntry)[] migrations)
@@ -392,7 +408,7 @@ public class Plugin : BaseUnityPlugin
             migration.newEntry.SetSerializedValue(orphanedEntryText);
             orphanedEntries.Remove(oldDefinition);
 
-            Log($"Migrated [{oldDefinition.Section}].[{oldDefinition.Key}] to [{migration.newEntry.Definition.Section}].[{migration.newEntry.Definition.Key}]");
+            LogInfo($"Migrated [{oldDefinition.Section}].[{oldDefinition.Key}] to [{migration.newEntry.Definition.Section}].[{migration.newEntry.Definition.Key}]");
         });
     }
 }

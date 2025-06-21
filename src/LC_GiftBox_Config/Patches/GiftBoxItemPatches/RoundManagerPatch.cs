@@ -1,15 +1,13 @@
 using System;
-using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using HarmonyLib;
+
 using LCUtils;
 using ILUtils;
 using ILUtils.HarmonyXtensions;
-using System.Reflection;
-using System.Reflection.Emit;
-
-using LogLevel = BepInEx.Logging.LogLevel;
-using Random = System.Random;
 
 namespace LC_GiftBox_Config.Patches.GiftBoxItemPatches;
 
@@ -43,7 +41,7 @@ internal static class RoundManagerPatch
         Random AnomalyRandom = roundmanager.AnomalyRandom;
 
         if (weights.Length != SpawnableScrapUtils.SpawnableScrapList.Count)
-            Plugin.Log(LogLevel.Error, "[Patches.RoundManagerPatch.AdjustGiftBoxSpawnWeight] weights length does not match spawnableScrap length! Wonkiness may occur!");
+            Plugin.LogError("[Patches.RoundManagerPatch.AdjustGiftBoxSpawnWeight] weights length does not match spawnableScrap length! Wonkiness may occur!");
 
         for (int j = 0; j < Math.Min(SpawnableScrapUtils.SpawnableScrapList.Count, weights.Length); j++) {
             if (!Plugin.GIFTBOX_ITEM.LooselyEquals(SpawnableScrapUtils.SpawnableScrapList[j].spawnableItem)) continue;

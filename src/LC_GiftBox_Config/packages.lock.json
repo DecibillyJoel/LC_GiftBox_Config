@@ -390,10 +390,7 @@
         "type": "Project"
       },
       "com.github.decibillyjoel.LCUtils": {
-        "type": "Project",
-        "dependencies": {
-          "com.github.decibillyjoel.ILUtils": "[1.0.4, )"
-        }
+        "type": "Project"
       }
     }
   }

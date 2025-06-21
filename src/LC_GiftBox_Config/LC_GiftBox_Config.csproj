@@ -1,96 +1,55 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-
     <!-- 
-      These were automatically generated for you by the template.
-      You should probably not edit them by hand if you've already published
-      to the Thunderstore.
+      $(MSBuildProjectName) = this .csproj filename (without the extension)
+      $(PackageName) and other TS package props are defined in Directory.Build.props
+      You shouldn't have to change these, but you could if you wanted to.
     -->
-    <AssemblyName>com.github.decibillyjoel.lc_giftbox_config</AssemblyName>
-    <Authors>DBJ</Authors>
-    <TsTeam>DBJ</TsTeam>
-    <Description>Configure gift boxes / presents, such as having store items / scrap / another present / nothing, weighting of item selection, spawn rates, etc.</Description>
-    <Product>LC_GiftBox_Config</Product>
+    <Product>$(MSBuildProjectName)</Product>
+    <AssemblyName>$(PackageGUID)</AssemblyName>
+    <Authors>$(PackageAuthor)</Authors>
+    <Description>$(PackageDesc)</Description>
+    <Version>$(PackageVersion)</Version>
     <!--
-      Except this, you should keep this up to date with your publishing tags.
+      "plugin" = BepInEx plugin; exports assets to dist/plugins during publishing
+      "patcher" = BepInEx preloader; exports assets to dist/patchers during publishing
+      "" = custom file structure; exports assets to dist/ during publishing
     -->
-    <Version>1.3.0</Version>
-
-    <!--
-      Access private fields
-    -->
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
-
+    <BepTypePluginOrPatcher>plugin</BepTypePluginOrPatcher>
     <!-- 
       You shouldn't have to change these, but you could if you wanted to.
     -->
     <ProjectDepsFileName>$(Product).deps.json</ProjectDepsFileName>
     <RootNamespace>$(Product)</RootNamespace>
     <TargetName>$(Product)</TargetName>
+    <!-- 
+      Don't change these 
+    -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <IsTSPackager>False</IsTSPackager>
+    <ArtifactsPivots>$(ArtifactsPivots)$(BepTypePluginOrPatcher.ToLower())s\</ArtifactsPivots>
   </PropertyGroup>
-
-  <!--
-    When adding additional references, ensure you use <Private>false</Private> to
-    ensure the DLL is explicitly NOT copied to the output directory. This is because
-    the DLLs are already included in the game and will be loaded from there.
-
-    Further, if the DLL is not included as part of the game, you should be using a
-    Dependency in your thunderstore.toml file to ensure the DLL is available to the
-    game when your mod is loaded.
-
-    Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
-  -->
-
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)/libs/ILUtils/src/ILUtils/ILUtils.csproj" Private="false" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)/libs/LCUtils/src/LCUtils/LCUtils.csproj" Private="false" />
-  </ItemGroup>
+    <!--
+      References specifically for this .csproj. For references you want available to
+      all .csproj, add them to Directory.Build.props instead.
+      
+      When adding additional references, ensure you use <Private>false</Private> to
+      ensure the DLL is explicitly NOT copied to the output directory. This is because
+      the DLLs are already included in the game and will be loaded from there.
+      (NOTE: Use <PrivateAssets>all</PrivateAssets> for PackageReferences instead)
 
-  <ItemGroup>
-    <PackageReference 
-      Include="Xilophor.StaticNetcodeLib" 
-      Version="1.1.1"
-      PrivateAssets="all"
-    />
+      Further, if the DLL is not included as part of the game, you should be using a
+      Dependency in your thunderstore.toml file to ensure the DLL is available to the
+      game when your mod is loaded.
+
+      Assembly Example: <Reference Include="Assembly-CSharp.dll" Private="false" />
+      Project Example: <ProjectReference Include="$(PackageDir)src\MyProject\MyProject.csproj" Private="false" />
+      NuGet Example: <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+      Thunderstore Example: <PackageReference Include="Evaisa-LethalLib" Version="0.16.1" PrivateAssets="all" />
+    -->
+    <ProjectReference Include="$(PackageDir)lib\ILUtils\src\ILUtils\ILUtils.csproj" Private="false" />
+    <ProjectReference Include="$(PackageDir)lib\LCUtils\src\LCUtils\LCUtils.csproj" Private="false" />
+    <PackageReference Include="Xilophor.StaticNetcodeLib" Version="1.1.1" PrivateAssets="all" />
   </ItemGroup>
-
-  <!--
-    Don't mess with anything below this line, it is required to build via 
-    github actions. If you are referencing other DLLs in your project than the
-    base game or unity DLLs they will need to be available via NUGET or copied
-    directly into your repo (which is pretty bad form) to build properly unless
-    they already exist on github in which case you can use submodules to track
-    the reference instead.
-  -->
-
-  <ItemGroup>
-    <PackageReference 
-      Include="BepInEx.AssemblyPublicizer.MSBuild" 
-      Version="0.4.*" 
-      PrivateAssets="all" 
-      IncludeAssets="all"
-    />
-    <PackageReference
-      Include="BepInEx.Analyzers"
-      Version="1.*"
-      PrivateAssets="all" 
-    />
-    <PackageReference
-      Include="BepInEx.Core"
-      Version="5.4.*"
-      PrivateAssets="all" 
-    />
-    <PackageReference
-      Include="LethalCompany.GameLibs.Steam"
-      Version="67.0.0-ngd.0"
-      Publicize="true"
-      PrivateAssets="all" 
-    />
-  </ItemGroup>
-
 </Project>

@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Libraries/ILUtils/">
+    <Project Path="lib/ILUtils/src/ILUtils/ILUtils.csproj" />
+  </Folder>
+  <Folder Name="/Libraries/LCUtils/">
+    <Project Path="lib/LCUtils/src/LCUtils/LCUtils.csproj" />
+  </Folder>
   <Folder Name="/Mod Docs + Icon/">
     <File Path="docs/CHANGELOG.md" />
     <File Path="docs/LICENSE.md" />
@@ -12,5 +18,5 @@
     <Project Path="src/ThunderstorePackager/ThunderstorePackager.proj" Type="C#" />
   </Folder>
   <Folder Name="/Libraries/" />
-  <Project Path="src/LCMPublishingTemplate/LCMPublishingTemplate.csproj" />
+  <Project Path="src/LC_GiftBox_Config/LC_GiftBox_Config.csproj" />
 </Solution>

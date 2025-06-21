@@ -1,4 +1,0 @@
-The document files needed for your Thunderstore package and repo (README.md,
-LICENSE.md, CHANGELOG.md, icon.png, and any other license or documentation
-files of your choice with the .md extension) should be included in this dir
-in order for them to be included in the outputted mod package.
