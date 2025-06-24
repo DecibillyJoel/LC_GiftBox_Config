@@ -90,10 +90,10 @@
 			"type": "pickString",
 			"description": "Select the project reference type",
 			"options": [
-				"src",
-				"lib"
+				"lib",
+				"src"
 			],
-			"default": "src"
+			"default": "lib"
 		}
 	]
 }

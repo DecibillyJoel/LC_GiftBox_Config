@@ -17,7 +17,9 @@ public class Plugin : BaseUnityPlugin
 {
   #region Plugin Info
     /*
-      Here, we make the plugin instance and info accessible anywhere
+      Here, we make the plugin instance and info accessible anywhere.
+      The GUID, name, etc. are inherited from a static class that is
+      auto generated using properties set in Directory.Build.props
     */
     
     public static Plugin Instance { get; private set; } = null!;

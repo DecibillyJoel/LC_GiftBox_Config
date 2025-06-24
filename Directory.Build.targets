@@ -29,7 +29,11 @@ internal static class LCMProjectInfo
 }
 ]]></GeneratedText>
       <GeneratedFilePath>$(IntermediateOutputPath)LCMProjectInfo.cs</GeneratedFilePath>
+      <LegacyGeneratedFilePath>$(IntermediateOutputPath)BepPluginInfo.cs</LegacyGeneratedFilePath>
     </PropertyGroup>
+
+    <!-- Delete old BepPluginInfo.cs if it still exists -->
+    <Delete Condition="Exists('$(LegacyGeneratedFilePath)')" Files="$(LegacyGeneratedFilePath)" />
 
     <ItemGroup>
       <Compile Include="$(GeneratedFilePath)" />
