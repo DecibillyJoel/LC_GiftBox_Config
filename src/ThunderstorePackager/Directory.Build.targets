@@ -1,4 +1,39 @@
-<Project>
+<Project InitialTargets="GetProjectReferences">
+    <!-- 
+        Sets all csprojs included in the solution as project
+        refs so that this project is last in the build order
+    -->
+    <Target Name="GetProjectReferences">
+        <!-- Use dotnet sln list to get all projects in the solution -->
+        <Exec 
+            Command='dotnet sln "$(PackageDir)\" list' 
+            ConsoleToMsBuild="true"
+            StandardOutputImportance="low"
+        >
+            <Output TaskParameter="ConsoleOutput" ItemName="_SlnListOutput" />
+        </Exec>
+
+        <!-- Filter the list output to valid file paths -->
+        <ItemGroup>
+            <_SlnListFiles 
+                Include="$(PackageDir)%(_SlnListOutput.Identity)" 
+                Condition="'%(_SlnListOutput.Extension)' == '.csproj' and Exists('$(PackageDir)%(_SlnListOutput.Identity)')"
+            />
+        </ItemGroup>
+
+        <!-- Add project files as project references -->
+        <ItemGroup>
+            <ProjectReference Include="%(_SlnListFiles.FullPath)"
+                Condition="'%(_SlnListFiles.FullPath)' != '$(MSBuildThisFileFullPath)'"
+                Private="false"
+                PrivateAssets="all"
+                IncludeAssets=""
+                ExcludeAssets="all"
+                ReferenceOutputAssembly="false"
+            />
+        </ItemGroup>
+    </Target>
+
     <!--
         Runs on template install to set the template as upstream and the package repo as origin
     -->

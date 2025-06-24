@@ -9,32 +9,13 @@
         <ArtifactsPivots>\</ArtifactsPivots>
     </PropertyGroup>
     
-    <!-- 
-        Simply sets all .csproj and .proj as project refs 
-        so that this project is last in the build order
+    <!--
+        Remove any inherited references
     -->
     <ItemGroup>
         <Reference Remove="**\*" />
         <PackageReference Remove="**\*" />
         <ProjectReference Remove="**\*" />
-        
-        <ProjectReference Include="$(PackageDir)**\*.csproj"
-            Private="false"
-            PrivateAssets="all"
-            IncludeAssets=""
-            ExcludeAssets="all"
-            ReferenceOutputAssembly="false"
-            SkipGetTargetFrameworkProperties="true"
-        />
-        <ProjectReference Include="$(PackageDir)**\*.proj"
-            Private="false"
-            PrivateAssets="all"
-            IncludeAssets=""
-            ExcludeAssets="all"
-            ReferenceOutputAssembly="false"
-            SkipGetTargetFrameworkProperties="true"
-        />
-        <ProjectReference Remove="$(MSBuildThisFileFullPath)" />
     </ItemGroup>
 
     <!-- This property ensures that dotnet publish does not call Build, which is important -->
