@@ -3,6 +3,7 @@
     <!-- 
       $(MSBuildProjectName) = this .csproj filename (without the extension)
       $(PackageName) and other TS package props are defined in Directory.Build.props
+      
       You shouldn't have to change these, but you could if you wanted to.
     -->
     <Product>$(MSBuildProjectName)</Product>
