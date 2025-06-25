@@ -41,7 +41,7 @@
 			"command": "dotnet",
 			"args": [
 				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:AddGitSubmodule",
+				"-t:ThunderstorePackager:AddGitSubmodule",
 				"-p:GitSubmoduleUrl=${input:gitSubmoduleUrl}",
 				"-p:GitSubmoduleDirName=${input:gitSubmoduleDirName}",
 				"-p:GitSubmoduleProjRefType=${input:gitSubmoduleProjRefType}"
@@ -55,7 +55,7 @@
 			"command": "dotnet",
 			"args": [
 				"msbuild",
-				"-t:Thunderstore Packager\\ThunderstorePackager:RemoveGitSubmodule",
+				"-t:ThunderstorePackager:RemoveGitSubmodule",
 				"-p:GitSubmoduleDirName=${input:gitSubmoduleDirName}",
 				"-p:GitSubmoduleProjRefType=${input:gitSubmoduleProjRefType}"
 			],
