@@ -1,4 +1,39 @@
-<Project>
+<Project InitialTargets="GetProjectReferences">
+    <!-- 
+        Sets all csprojs included in the solution as project
+        refs so that this project is last in the build order
+    -->
+    <Target Name="GetProjectReferences">
+        <!-- Use dotnet sln list to get all projects in the solution -->
+        <Exec 
+            Command='dotnet sln "$(PackageDir)\" list' 
+            ConsoleToMsBuild="true"
+            StandardOutputImportance="low"
+        >
+            <Output TaskParameter="ConsoleOutput" ItemName="_SlnListOutput" />
+        </Exec>
+
+        <!-- Filter the list output to valid file paths -->
+        <ItemGroup>
+            <_SlnListFiles 
+                Include="$(PackageDir)%(_SlnListOutput.Identity)" 
+                Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_SlnListOutput.Extension)', '.*proj')) and Exists('$(PackageDir)%(_SlnListOutput.Identity)')"
+            />
+        </ItemGroup>
+
+        <!-- Add project files as project references -->
+        <ItemGroup>
+            <ProjectReference Include="%(_SlnListFiles.FullPath)"
+                Condition="'%(_SlnListFiles.FullPath)' != '$(MSBuildProjectFullPath)'"
+                Private="false"
+                PrivateAssets="all"
+                IncludeAssets=""
+                ExcludeAssets="all"
+                ReferenceOutputAssembly="false"
+            />
+        </ItemGroup>
+    </Target>
+
     <!--
         Runs on template install to set the template as upstream and the package repo as origin
     -->
@@ -89,12 +124,9 @@
 
         <!-- Collect well structured project files -->
         <ItemGroup>
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.csproj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.proj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.csproj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.proj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.csproj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\*.*proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*.*proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\src\*\*.*proj" />
         </ItemGroup>
 
         <!-- If proj ref type is src, set solution folder behavior to root -->
@@ -124,8 +156,7 @@
 
         <!-- Collect project files -->
         <ItemGroup>
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.csproj" />
-            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.proj" />
+            <GitSubmoduleProjectFiles Include="$(PackageDir)$(GitSubmoduleProjRefType)\$(GitSubmoduleDirName)\**\*.*proj" />
         </ItemGroup>
 
         <!-- Remove submodule from the solution -->
